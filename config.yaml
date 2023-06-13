@@ -1,0 +1,21 @@
+general:
+  project_name: untitled_project
+  output_folder: 
+  camera_type: FLIR
+camera_settings:
+  camera_0:
+    exposure_time: 300000.0
+    gain_level: 5
+    gamma: 0.8
+exif_data:
+  camera_0:
+    Make: FLIR
+    Model: BFS-U3-200S6C-C
+    SerialNumber: '21188171'
+    Lens: MPZ
+    CameraSerialNumber: '21188171'
+    LensManufacturer: Computar
+    LensModel: 75.0 f / 3.1
+    FocalLength: '75.0'
+    FocalLengthIn35mmFormat: '203.0'
+    
