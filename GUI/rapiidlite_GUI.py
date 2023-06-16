@@ -268,7 +268,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "RAPIID v1.0"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "RAPIIDlite v1.0"))
         self.camera_0_label.setText(_translate("MainWindow", "Live View"))
         self.label_selectCamera.setText(_translate("MainWindow", "Select camera"))
         self.camera_0_exposure_label.setText(_translate("MainWindow", "Exposure time (us)"))

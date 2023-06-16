@@ -285,7 +285,18 @@ class UI(QMainWindow):
             self.ui.pushButton_capture.setEnabled(False)
             if self.FLIR0_found:
                 self.capture_image(select_cam = 0, tag = "_label")
+                self.show_preview()
             self.ui.pushButton_capture.setEnabled(True)
+
+    def show_preview(self):
+        file_name = str(self.output_location_folder.joinpath(self.ui.lineEdit_accession.text() + "_label" + self.file_format))
+        img = cv2.imread(file_name)
+
+        preview_img = QtGui.QImage(img, img.shape[1], img.shape[0], QtGui.QImage.Format_RGB888).rgbSwapped()
+        preview_img_pixmap = QtGui.QPixmap.fromImage(preview_img)
+
+        self.ui.preview.setPixmap(preview_img_pixmap)
+        self.ui.preview.setAlignment(QtCore.Qt.AlignCenter)
 
     def show_popup(self):
         button = QMessageBox.question(self, "RAPIID lite Dialog", "A folder with this accession number already exists!\nDo you want to overwrite the existing file/s?")
@@ -296,6 +307,7 @@ class UI(QMainWindow):
         self.ui.pushButton_capture.setEnabled(False)
         if self.FLIR0_found:
             self.capture_image(select_cam = 0, tag = "_label")
+            self.show_preview()
         self.ui.pushButton_capture.setEnabled(True)
 
     def capture_image(self, select_cam, tag):
