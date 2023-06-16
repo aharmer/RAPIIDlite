@@ -119,7 +119,7 @@ class UI(QMainWindow):
             from scripts.rapiid_lite_FLIR import customFLIR
             self.FLIR = customFLIR()
 
-            if len(self.FLIR.cam_list_raw) == 0:
+            if len(self.FLIR.cam_list) == 0:
                 msg = QMessageBox()
                 msg.setWindowTitle("RAPIID Lite Dialog")
                 msg.setText("No cameras attached!\nConnect cameras and restart the app.")
