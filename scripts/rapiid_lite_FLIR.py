@@ -17,12 +17,12 @@ class customFLIR():
         print('Spinnaker library version: %d.%d.%d.%d' % (version.major, version.minor, version.type, version.build))
 
         # Retrieve list of cameras from the system
-        self.cam_list_raw = self.system.GetCameras()
+        self.cam_list = self.system.GetCameras()
         
         # get all serial numbers of connected and support FLIR cameras
         self.device_names = []
 
-        for id, cam in enumerate(self.cam_list_raw):
+        for id, cam in enumerate(self.cam_list):
             nodemap = cam.GetTLDeviceNodeMap()
 
             # Retrieve device serial number
@@ -35,16 +35,10 @@ class customFLIR():
             print("Detected", self.device_names[id][0], "with Serial ID", self.device_names[id][1])
 
 
-        serial_0 = '23218621'
+        # serial_0 = '23218621'
         
-        self.cam_list = [None]
-        if serial_0 in chain(*self.device_names):
-            cam_0 = self.cam_list_raw.GetBySerial(serial_0)
-            self.cam_list.insert(0, cam_0)
-        else:
-            self.cam_list.insert(0, None)
-
-        num_cameras = len(self.cam_list_raw)
+        self.cam = self.cam_list[0]
+        num_cameras = len(self.cam_list)
 
         print('Number of cameras detected: %d' % num_cameras)
 
