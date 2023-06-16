@@ -35,7 +35,7 @@ class customFLIR():
             print("Detected", self.device_names[id][0], "with Serial ID", self.device_names[id][1])
 
 
-        serial_0 = '23211903'
+        serial_0 = '23218621'
         
         self.cam_list = [None]
         if serial_0 in chain(*self.device_names):
@@ -159,7 +159,6 @@ class customFLIR():
                     # Create a unique filename
                     filename = img_name
 
-                    # NEW
                     if return_image:
                         return image_result
                     else:
