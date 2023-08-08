@@ -9,6 +9,7 @@ from PyQt5.QtCore import *
 from GUI.rapiidlite_GUI import Ui_MainWindow  # importing main window of the GUI
 import scripts.ymlRW as ymlRW
 import cv2
+import pylibdmtx.pylibdmtx as dmtx
 from qt_material import apply_stylesheet
 
 
@@ -102,6 +103,7 @@ class UI(QMainWindow):
         self.camera_type = None
         self.camera_0_model = None
         self.file_format = ".jpg"
+        self.webcamView = False
 
         # Assign camera control features to ui
         self.ui.pushButton_camera_0.pressed.connect(lambda: self.begin_live_view(cam_id = self.ui.camera_0, select_cam = 0, button_id = self.ui.pushButton_camera_0))
@@ -113,6 +115,30 @@ class UI(QMainWindow):
 
         self.ui.shortcut_capture = QShortcut(QKeySequence('Alt+C'), self)
         self.ui.shortcut_capture.activated.connect(self.capture_set)
+
+        # Initiate webcam
+        # self.cap = cv2.VideoCapture(2)
+        # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        self.ui.pushButton_camera_1.pressed.connect(lambda: self.begin_webcam(cam_id = self.ui.camera_1, button_id = self.ui.pushButton_camera_1))
+
+        # def returnCameraIndexes():  
+        self.index = 0
+        self.webcam_arr = []
+        while True:
+            self.cap = cv2.VideoCapture(self.index)
+            try:
+                if self.cap.getBackendName() == "MSMF":
+                    self.webcam_arr.append("Webcam " + str(self.index))
+            except:
+                break
+            self.cap.release()
+            self.index += 1
+    
+        for webcam in self.webcam_arr:
+            self.ui.comboBox_selectWebcam.addItem(webcam)
+
+        self.ui.comboBox_selectWebcam.currentTextChanged.connect(self.select_webcam)
 
         # Find FLIR cameras, if attached
         try:
@@ -132,7 +158,7 @@ class UI(QMainWindow):
             # all detected FLIR cameras are listed in self.cam.device_names
             # by default, use the first camera found in the list
             # self.cam = self.FLIR
-            self.FLIR.initialise_camera(select_cam = 0, exposure = 300000)
+            self.FLIR.initialise_camera(select_cam = 0, exposure = 50000)
             self.log_info("Camera successfully initialised.")
             self.ui.camera_0.setText("Camera successfully initialised.")
             # now retrieve the name of all found FLIR cameras and add them to the camera selection
@@ -200,6 +226,23 @@ class UI(QMainWindow):
                     self.enable_inputs(cam_id = 0)
                     self.file_format = ".jpg"
 
+    def select_webcam(self):
+        # self.disable_inputs(cam_id = 1)
+        selected_camera = self.ui.comboBox_selectWebcam.currentText()
+        self.log_info("Selected " + str(selected_camera))
+
+        # stop the webcam if currently in use
+        if self.webcamView:
+            self.cap.release()
+
+        # Select new webcam
+        webcam_id = int(selected_camera.split(" ")[1])
+        self.cap = cv2.VideoCapture(webcam_id)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        # self.enable_inputs(cam_id = 1)
+        # self.webcamView = True
+
     def set_output_location(self):
         new_location = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose output folder...", str(Path.cwd()))
                 
@@ -217,10 +260,111 @@ class UI(QMainWindow):
         self.ui.listWidget_log.addItem(now.strftime("%H:%M:%S") + " " + info)
         self.ui.listWidget_log.sortItems(QtCore.Qt.DescendingOrder)
 
+    def decode_datamatrix(self, frame):
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(gray, (3,3), 0)
+        _, threshold = cv2.threshold(blur, 50, 255, cv2.THRESH_BINARY_INV)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7,7))
+        closing = cv2.morphologyEx(threshold, cv2.MORPH_CLOSE, kernel)
+        contours, _ = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        for contour in contours:
+            if cv2.contourArea(contour) > 1000:  # Adjust the threshold based on your needs
+                x, y, w, h = cv2.boundingRect(contour)
+                aspect_ratio = float(w) / h
+
+                # Check if the aspect ratio is close to 1 (square shape)
+                if 0.8 <= aspect_ratio <= 1.2:
+                  # x1 = x
+                  # y1 = y
+                  # x2 = x + w
+                  # y2 = y + h
+                  
+                  # x_centre = (x2 - x1)/2 + x1
+                  # y_centre = (y2 - y1)/2 + y1
+                  
+                  # cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 5)
+                  # cv2.circle(frame, (int(x_centre), int(y_centre)), 3, (0, 0, 255), 3)
+                      
+                  # Crop the detected DataMatrix region
+                  roi = gray[y - 1:y + h + 1, x - 1:x + w + 1]
+
+                  # Decode the DataMatrix
+                  if roi.shape[0] > 0:
+                    decoded_data = dmtx.decode(roi)
+                    for data in decoded_data:
+                        return data.data.decode('utf-8')  # Return the decoded data
+                  #   try:
+                  #     decoded_data = dmtx.decode(roi)
+                  #     for data in decoded_data:
+                  #         return data.data.decode('utf-8')  # Return the decoded data
+                  # except dmtx.PyLibDMTXError:
+                  #     continue
+
+        return None
+
+    def update_webcam(self, cam_id, progress_callback):
+        # Read the current frame from the video stream
+        while self.webcamView:    
+            ret, frame = self.cap.read()
+
+            if ret:
+                # Convert the frame to RGB format
+                img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                img = cv2.flip(img, -1)
+                # h, w, _ = frame.shape
+                # scale = 2
+                # centerX, centerY = int(h/2),int(w/2)
+                # radiusX, radiusY = int(centerX*(1/scale)), int(centerY*(1/scale))
+
+                # minX, maxX = centerX - radiusX, centerX + radiusX
+                # minY, maxY = centerY - radiusY, centerY + radiusY
+
+                # crop = img[minX:maxX, minY:maxY]
+                # zoom = cv2.resize(crop, (w, h), cv2.INTER_LANCZOS4)
+
+                decoded_data = self.decode_datamatrix(frame)
+
+                if decoded_data:
+                    cv2.putText(img, "Decoded data: " + decoded_data, (30, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (48, 56, 65), 2, cv2.LINE_AA)
+                    self.ui.lineEdit_accession.setText(decoded_data)
+
+                # Convert the frame to QImage
+                live_img = QImage(img, img.shape[1], img.shape[0], QImage.Format_RGB888)
+                live_img_pixmap = QtGui.QPixmap.fromImage(live_img)
+                
+                # Setup pixmap with the acquired image
+                live_img_scaled = live_img_pixmap.scaled(cam_id.width(),
+                                                         cam_id.height(),
+                                                         QtCore.Qt.KeepAspectRatio)
+                # Set the pixmap onto the label
+                cam_id.setPixmap(live_img_scaled)
+                 # Align the label to center
+                cam_id.setAlignment(QtCore.Qt.AlignCenter)
+
+        cam_id.setText("Live view disabled.")
+
+    def begin_webcam(self, cam_id, button_id):
+        if not self.webcamView:
+            self.log_info("Began label camera live view.")
+            button_id.setText("Stop Live View")
+            self.webcamView = True
+            
+            worker = Worker(self.update_webcam, cam_id)
+            self.threadpool.start(worker)
+
+        else:
+            cam_id.setText("Live view disabled.")
+            button_id.setText("Start live view")
+            self.log_info("Ended label camera live view")
+            self.webcamView = False
+
     def update_live_view(self, cam_id, select_cam, progress_callback):
         while self.liveView and self.camera_type == "FLIR":
             try:
                 img = self.FLIR.live_view(select_cam)
+                # img = cv2.flip(img, -1)
+                # img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
 
                 live_img = QtGui.QImage(img, img.shape[1], img.shape[0], QtGui.QImage.Format_RGB888).rgbSwapped()
                 live_img_pixmap = QtGui.QPixmap.fromImage(live_img)
@@ -285,18 +429,7 @@ class UI(QMainWindow):
             self.ui.pushButton_capture.setEnabled(False)
             if self.FLIR0_found:
                 self.capture_image(select_cam = 0, tag = "_label")
-                self.show_preview()
             self.ui.pushButton_capture.setEnabled(True)
-
-    def show_preview(self):
-        file_name = str(self.output_location_folder.joinpath(self.ui.lineEdit_accession.text() + "_label" + self.file_format))
-        img = cv2.imread(file_name)
-
-        preview_img = QtGui.QImage(img, img.shape[1], img.shape[0], QtGui.QImage.Format_RGB888).rgbSwapped()
-        preview_img_pixmap = QtGui.QPixmap.fromImage(preview_img)
-
-        self.ui.preview.setPixmap(preview_img_pixmap)
-        self.ui.preview.setAlignment(QtCore.Qt.AlignCenter)
 
     def show_popup(self):
         button = QMessageBox.question(self, "RAPIID lite Dialog", "A folder with this accession number already exists!\nDo you want to overwrite the existing file/s?")
@@ -307,11 +440,10 @@ class UI(QMainWindow):
         self.ui.pushButton_capture.setEnabled(False)
         if self.FLIR0_found:
             self.capture_image(select_cam = 0, tag = "_label")
-            self.show_preview()
         self.ui.pushButton_capture.setEnabled(True)
 
     def capture_image(self, select_cam, tag):
-        now = datetime.datetime.now()
+        # now = datetime.datetime.now()
         self.create_output_folders()
         file_name = str(self.output_location_folder.joinpath(self.ui.lineEdit_accession.text() + tag + self.file_format))
         self.FLIR.capture_image(select_cam, img_name = file_name)

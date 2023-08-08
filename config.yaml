@@ -4,7 +4,7 @@ general:
   camera_type: FLIR
 camera_settings:
   camera_0:
-    exposure_time: 300000.0
+    exposure_time: 50000.0
     gain_level: 5
     gamma: 0.8
 exif_data:
