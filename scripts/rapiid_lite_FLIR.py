@@ -45,7 +45,7 @@ class customFLIR():
         # Finish if there are no cameras
         if num_cameras == 0:
             # Clear camera list before releasing system
-            self.cam_list_raw.Clear()
+            self.cam_list.Clear()
 
             # Release system instance
             self.system.ReleaseInstance()
@@ -54,7 +54,7 @@ class customFLIR():
 
             return None
 
-    def initialise_camera(self, select_cam = 0, exposure = 150000):
+    def initialise_camera(self, select_cam = 0, exposure = 50000):
         # overwrite the selected cam at initialisation if desired
         self.cam = self.cam_list[select_cam]
         # initialise camera, apply settings and begin acquisition
@@ -79,7 +79,7 @@ class customFLIR():
         self.cam.BeginAcquisition()
 
 
-    def set_exposure(self, select_cam = 0, exposure = 150000):
+    def set_exposure(self, select_cam = 0, exposure = 50000):
         self.cam = self.cam_list[select_cam]
         self.cam.ExposureAuto.SetValue(PySpin.ExposureAuto_Off)
         exposure = min(self.cam.ExposureTime.GetMax(), exposure)
@@ -181,7 +181,7 @@ class customFLIR():
 
     def releasePySpin(self):
         # Clear camera list before releasing system
-        self.cam_list_raw.Clear()
+        self.cam_list.Clear()
         del self.cam_list
 
         # Release system instance
