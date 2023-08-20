@@ -421,6 +421,9 @@ class UI(QMainWindow):
             self.FLIR.set_gamma(select_cam, gamma = float(value))
 
     def capture_set(self):
+        if self.webcamView:
+            self.begin_webcam(cam_id = self.ui.camera_1, button_id = self.ui.pushButton_camera_1)
+
         self.output_location_folder = Path(self.output_location).joinpath(self.ui.lineEdit_project.text()).joinpath(self.ui.lineEdit_accession.text())
         if os.path.exists(self.output_location_folder):
             self.show_popup()
@@ -430,6 +433,7 @@ class UI(QMainWindow):
             if self.FLIR0_found:
                 self.capture_image(select_cam = 0, tag = "_label")
             self.ui.pushButton_capture.setEnabled(True)
+            self.begin_webcam(cam_id = self.ui.camera_1, button_id = self.ui.pushButton_camera_1)
 
     def show_popup(self):
         button = QMessageBox.question(self, "RAPIID lite Dialog", "A folder with this accession number already exists!\nDo you want to overwrite the existing file/s?")
@@ -441,6 +445,8 @@ class UI(QMainWindow):
         if self.FLIR0_found:
             self.capture_image(select_cam = 0, tag = "_label")
         self.ui.pushButton_capture.setEnabled(True)
+        self.begin_webcam(cam_id = self.ui.camera_1, button_id = self.ui.pushButton_camera_1)
+        print("webcam on")
 
     def capture_image(self, select_cam, tag):
         # now = datetime.datetime.now()
