@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>RAPIIDlite v1.0</string>
+   <string>RAPIIDlite v2.0</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -23,7 +23,7 @@
       <widget class="QWidget" name="scrollAreaWidgetContents">
        <property name="geometry">
         <rect>
-         <x>0</x>
+         <x>-9</x>
          <y>0</y>
          <width>1854</width>
          <height>1050</height>
@@ -48,7 +48,7 @@
            <item>
             <layout class="QVBoxLayout" name="verticalLayout">
              <item>
-              <widget class="QLabel" name="camera_0_label">
+              <widget class="QLabel" name="label_webcam_label">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -77,7 +77,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="camera_0">
+              <widget class="QLabel" name="label_camera">
                <property name="enabled">
                 <bool>true</bool>
                </property>
@@ -125,14 +125,26 @@
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_6">
                  <item>
-                  <widget class="QLabel" name="specimaen_label">
+                  <widget class="QLabel" name="label_label_2">
                    <property name="text">
                     <string>Label camera</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="pushButton_camera_0">
+                  <widget class="QPushButton" name="pushButton_label_webcam">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="minimumSize">
+                    <size>
+                     <width>153</width>
+                     <height>0</height>
+                    </size>
+                   </property>
                    <property name="text">
                     <string>Start live view</string>
                    </property>
@@ -143,109 +155,29 @@
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_2">
                  <item>
-                  <widget class="QLabel" name="label_selectCamera">
+                  <widget class="QLabel" name="label_selectLabelWebcam">
                    <property name="text">
                     <string>Select camera</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QComboBox" name="comboBox_selectCamera"/>
+                  <widget class="QComboBox" name="comboBox_selectLabelWebcam"/>
                  </item>
                 </layout>
                </item>
                <item>
-                <layout class="QVBoxLayout" name="verticalLayout_5">
-                 <property name="rightMargin">
-                  <number>5</number>
+                <spacer name="horizontalSpacer_2">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
                  </property>
-                 <item>
-                  <widget class="QLabel" name="camera_0_exposure_label">
-                   <property name="text">
-                    <string>Exposure time (us)</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QSpinBox" name="spinBox_camera_0_exposure">
-                   <property name="buttonSymbols">
-                    <enum>QAbstractSpinBox::UpDownArrows</enum>
-                   </property>
-                   <property name="keyboardTracking">
-                    <bool>false</bool>
-                   </property>
-                   <property name="minimum">
-                    <number>1000</number>
-                   </property>
-                   <property name="maximum">
-                    <number>1000000</number>
-                   </property>
-                   <property name="singleStep">
-                    <number>10000</number>
-                   </property>
-                   <property name="value">
-                    <number>50000</number>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout_8">
-                 <property name="rightMargin">
-                  <number>5</number>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
                  </property>
-                 <item>
-                  <widget class="QLabel" name="camera_0_gain_label">
-                   <property name="text">
-                    <string>Gain level (dB)</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QDoubleSpinBox" name="doubleSpinBox_camera_0_gain">
-                   <property name="keyboardTracking">
-                    <bool>false</bool>
-                   </property>
-                   <property name="maximum">
-                    <double>25.000000000000000</double>
-                   </property>
-                   <property name="value">
-                    <double>5.000000000000000</double>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout_9">
-                 <item>
-                  <widget class="QLabel" name="camera_0_gamma_label">
-                   <property name="text">
-                    <string>Gamma correction</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QDoubleSpinBox" name="doubleSpinBox_camera_0_gamma">
-                   <property name="keyboardTracking">
-                    <bool>false</bool>
-                   </property>
-                   <property name="minimum">
-                    <double>0.100000000000000</double>
-                   </property>
-                   <property name="maximum">
-                    <double>4.000000000000000</double>
-                   </property>
-                   <property name="singleStep">
-                    <double>0.100000000000000</double>
-                   </property>
-                   <property name="value">
-                    <double>0.800000000000000</double>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
+                </spacer>
                </item>
               </layout>
              </item>
@@ -267,7 +199,7 @@
            <item>
             <layout class="QVBoxLayout" name="verticalLayout_3">
              <item>
-              <widget class="QLabel" name="camera_1_label">
+              <widget class="QLabel" name="barcode_webcam_label">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -296,7 +228,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="camera_1">
+              <widget class="QLabel" name="barcode_camera">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                  <horstretch>0</horstretch>
@@ -341,14 +273,14 @@
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_10">
                  <item>
-                  <widget class="QLabel" name="label_label">
+                  <widget class="QLabel" name="barcode_label">
                    <property name="text">
                     <string>Barcode camera</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="pushButton_camera_1">
+                  <widget class="QPushButton" name="pushButton_barcode_webcam">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                      <horstretch>0</horstretch>
@@ -371,14 +303,14 @@
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_11">
                  <item>
-                  <widget class="QLabel" name="label_selectWebcam">
+                  <widget class="QLabel" name="label_selecBarcodetWebcam">
                    <property name="text">
                     <string>Select camera</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QComboBox" name="comboBox_selectWebcam"/>
+                  <widget class="QComboBox" name="comboBox_selectBarcodeWebcam"/>
                  </item>
                 </layout>
                </item>
@@ -636,7 +568,7 @@
                  <enum>Qt::LeftToRight</enum>
                 </property>
                 <property name="horizontalScrollBarPolicy">
-                 <enum>Qt::ScrollBarAlwaysOff</enum>
+                 <enum>Qt::ScrollBarAsNeeded</enum>
                 </property>
                 <property name="isWrapping" stdset="0">
                  <bool>false</bool>

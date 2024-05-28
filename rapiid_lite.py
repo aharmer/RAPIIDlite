@@ -94,93 +94,67 @@ class UI(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        self.frame = None
+
         # start thread pool
         self.threadpool = QtCore.QThreadPool()
         print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
 
         # Set initial camera variables and buttons
-        self.liveView = False
-        self.camera_type = None
-        self.camera_0_model = None
+        # self.liveView = False
+        # self.camera_type = None
+        # self.camera_0_model = None
         self.file_format = ".jpg"
-        self.webcamView = False
+        self.label_webcamView = False
+        self.barcode_webcamView = False
 
-        # Assign camera control features to ui
-        self.ui.pushButton_camera_0.pressed.connect(lambda: self.begin_live_view(cam_id = self.ui.camera_0, select_cam = 0, button_id = self.ui.pushButton_camera_0))
-        self.ui.spinBox_camera_0_exposure.valueChanged.connect(lambda: self.set_exposure_manual(lab_id = self.ui.camera_0_exposure_label, select_cam = 0, spin_id = self.ui.spinBox_camera_0_exposure))
-        self.ui.doubleSpinBox_camera_0_gain.valueChanged.connect(lambda: self.set_gain_manual(lab_id = self.ui.camera_0_gain_label, select_cam = 0, dspin_id = self.ui.doubleSpinBox_camera_0_gain))
-        self.ui.doubleSpinBox_camera_0_gamma.valueChanged.connect(lambda: self.set_gamma(lab_id = self.ui.camera_0_gamma_label, select_cam = 0, dspin_id = self.ui.doubleSpinBox_camera_0_gamma))
-
+        # # Assign camera control features to ui
         self.ui.pushButton_capture.pressed.connect(self.capture_set)
 
         self.ui.shortcut_capture = QShortcut(QKeySequence('Alt+C'), self)
         self.ui.shortcut_capture.activated.connect(self.capture_set)
 
         # Initiate webcam
-        # self.cap = cv2.VideoCapture(2)
-        # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-        self.ui.pushButton_camera_1.pressed.connect(lambda: self.begin_webcam(cam_id = self.ui.camera_1, button_id = self.ui.pushButton_camera_1))
+        self.ui.pushButton_label_webcam.pressed.connect(lambda: self.begin_label_webcam(cam_id = self.ui.label_camera, button_id = self.ui.pushButton_label_webcam))
+        self.ui.pushButton_barcode_webcam.pressed.connect(lambda: self.begin_barcode_webcam(cam_id = self.ui.barcode_camera, button_id = self.ui.pushButton_barcode_webcam))
 
-        # def returnCameraIndexes():  
-        self.index = 0
-        self.webcam_arr = []
+        # List webcams for label camera  
+        self.index_label = 0
+        self.webcam_arr_label = []
         while True:
-            self.cap = cv2.VideoCapture(self.index)
+            self.cap_label = cv2.VideoCapture(self.index_label)
             try:
-                if self.cap.getBackendName() == "MSMF":
-                    self.webcam_arr.append("Webcam " + str(self.index))
+                if self.cap_label.getBackendName() == "MSMF":
+                    self.webcam_arr_label.append("Webcam " + str(self.index_label))
             except:
                 break
-            self.cap.release()
-            self.index += 1
+            self.cap_label.release()
+            self.index_label += 1
     
-        for webcam in self.webcam_arr:
-            self.ui.comboBox_selectWebcam.addItem(webcam)
+        for webcam in self.webcam_arr_label:
+            self.ui.comboBox_selectLabelWebcam.addItem(webcam)
 
-        self.ui.comboBox_selectWebcam.currentTextChanged.connect(self.select_webcam)
+        # List webcams for barcode camera  
+        self.index_barcode = 0
+        self.webcam_arr_barcode = []
+        while True:
+            self.cap_barcode = cv2.VideoCapture(self.index_barcode)
+            try:
+                if self.cap_barcode.getBackendName() == "MSMF":
+                    self.webcam_arr_barcode.append("Webcam " + str(self.index_barcode))
+            except:
+                break
+            self.cap_barcode.release()
+            self.index_barcode += 1
+    
+        for webcam in self.webcam_arr_barcode:
+            self.ui.comboBox_selectBarcodeWebcam.addItem(webcam)
 
-        # Find FLIR cameras, if attached
-        try:
-            from scripts.rapiid_lite_FLIR import customFLIR
-            self.FLIR = customFLIR()
+        self.ui.comboBox_selectLabelWebcam.currentTextChanged.connect(self.select_label_webcam)
+        self.ui.comboBox_selectBarcodeWebcam.currentTextChanged.connect(self.select_barcode_webcam)
 
-            if len(self.FLIR.cam_list) == 0:
-                msg = QMessageBox()
-                msg.setWindowTitle("RAPIID Lite Dialog")
-                msg.setText("No cameras attached!\nConnect cameras and restart the app.")
-                msg.setIcon(QMessageBox.Warning)
-                msg.setStandardButtons(QMessageBox.Ok)
-                msg.exec()
-                msg.buttonClicked.connect(self.closeApp())
-
-            # camera needs to be initialised before use (self.cam.initialise_camera)
-            # all detected FLIR cameras are listed in self.cam.device_names
-            # by default, use the first camera found in the list
-            # self.cam = self.FLIR
-            self.FLIR.initialise_camera(select_cam = 0, exposure = 50000)
-            self.log_info("Camera successfully initialised.")
-            self.ui.camera_0.setText("Camera successfully initialised.")
-            # now retrieve the name of all found FLIR cameras and add them to the camera selection
-            for cam in self.FLIR.device_names:
-                self.ui.comboBox_selectCamera.addItem(str(cam[0] + " ID: " + cam[1]))
-            self.camera_type = "FLIR"
-            # cam.device_names contains both model and serial number
-            self.camera_0_model = 'Blackfly S BFS-U3-200S6C'
-            self.FLIR0_found = True
-        except IndexError:
-            message0 = "No FLIR camera found!"
-            self.log_info(message0)
-            print(message0)
-            self.FLIR0_found = False
-            self.disable_inputs(cam_id = 0)
-        except ModuleNotFoundError:
-            message = "PYSPIN has not been installed - Disabling FLIR camera inputs"
-            self.log_info(message)
-            print(message)
-            self.disable_inputs(cam_id = 0)
-        
-        self.ui.comboBox_selectCamera.currentTextChanged.connect(self.select_camera)
+        self.select_label_webcam()
+        self.select_barcode_webcam()
 
         # Select output folder
         self.output_location = str(Path.home())
@@ -195,53 +169,44 @@ class UI(QMainWindow):
         self.ui.pushButton_load_config.pressed.connect(self.loadConfig)
         self.ui.pushButton_writeConfig.pressed.connect(self.writeConfig)
 
-        self.exif_data = self.config["exif_data"]
+        # self.exif_data = self.config["exif_data"]
 
         # Show the app
         self.showMaximized()
 
-    def select_camera(self):
-        self.disable_inputs(cam_id = 0)
-        selected_camera = self.ui.comboBox_selectCamera.currentText()
-        self.log_info("Selected camera: " + str(selected_camera))
-
-        # stop the live view if currently in use
-        if self.liveView:
-            self.begin_live_view()  # sets live view false if already running
-
-        # de-initialised previous FLIR, if it was in use
-        if self.camera_type == "FLIR":
-            # de-initialise the previous camera before setting up the newly selected one
-            self.cam.exit_cam(select_cam = 0)
-
-        # new camera -> FLIR
-        if selected_camera.split(" ")[0] == "Blackfly":
-            for ID, FLIR in enumerate(self.FLIR.device_names):
-                if self.ui.comboBox_selectCamera.currentText() == str(FLIR[0] + " ID: " + FLIR[1]):
-                    self.FLIR.initialise_camera(select_cam = ID)
-                    self.log_info("Camera in use: " + str(FLIR[0] + " ID: " + FLIR[1]))
-                    self.camera_type = "FLIR"
-                    self.begin_live_view()
-                    self.camera_0_model = self.FLIR.device_names[ID][0]
-                    self.enable_inputs(cam_id = 0)
-                    self.file_format = ".jpg"
-
-    def select_webcam(self):
+    def select_label_webcam(self):
         # self.disable_inputs(cam_id = 1)
-        selected_camera = self.ui.comboBox_selectWebcam.currentText()
-        self.log_info("Selected " + str(selected_camera))
+        selected_camera = self.ui.comboBox_selectLabelWebcam.currentText()
 
         # stop the webcam if currently in use
-        if self.webcamView:
-            self.cap.release()
+        if self.label_webcamView:
+            self.cap_label.release()
 
         # Select new webcam
         webcam_id = int(selected_camera.split(" ")[1])
-        self.cap = cv2.VideoCapture(webcam_id)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        self.cap_label = cv2.VideoCapture(webcam_id)
+        # self.cap_label.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        # self.cap_label.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         # self.enable_inputs(cam_id = 1)
-        # self.webcamView = True
+        # self.label_webcamView = True
+        self.log_info("Selected " + str(selected_camera))
+
+    def select_barcode_webcam(self):
+        # self.disable_inputs(cam_id = 1)
+        selected_camera = self.ui.comboBox_selectBarcodeWebcam.currentText()
+
+        # stop the webcam if currently in use
+        if self.barcode_webcamView:
+            self.cap_barcode.release()
+
+        # Select new webcam
+        webcam_id = int(selected_camera.split(" ")[1])
+        self.cap_barcode = cv2.VideoCapture(webcam_id)
+        self.cap_barcode.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        self.cap_barcode.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        # self.enable_inputs(cam_id = 1)
+        # self.barcode_webcamView = True
+        self.log_info("Selected " + str(selected_camera))
 
     def set_output_location(self):
         new_location = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose output folder...", str(Path.cwd()))
@@ -303,10 +268,10 @@ class UI(QMainWindow):
 
         return None
 
-    def update_webcam(self, cam_id, progress_callback):
+    def update_barcode_webcam(self, cam_id, progress_callback):
         # Read the current frame from the video stream
-        while self.webcamView:    
-            ret, frame = self.cap.read()
+        while self.barcode_webcamView:    
+            ret, frame = self.cap_barcode.read()
 
             if ret:
                 # Convert the frame to RGB format
@@ -344,85 +309,71 @@ class UI(QMainWindow):
 
         cam_id.setText("Live view disabled.")
 
-    def begin_webcam(self, cam_id, button_id):
-        if not self.webcamView:
-            self.log_info("Began label camera live view.")
-            button_id.setText("Stop Live View")
-            self.webcamView = True
-            
-            worker = Worker(self.update_webcam, cam_id)
-            self.threadpool.start(worker)
+    
+    def update_label_webcam(self, cam_id, progress_callback):
+        # Read the current frame from the video stream
+        while self.label_webcamView:    
+            ret, frame = self.cap_label.read()
 
-        else:
-            cam_id.setText("Live view disabled.")
-            button_id.setText("Start live view")
-            self.log_info("Ended label camera live view")
-            self.webcamView = False
+            if ret:
+                # Update the frame attribute
+                self.frame = frame
 
-    def update_live_view(self, cam_id, select_cam, progress_callback):
-        while self.liveView and self.camera_type == "FLIR":
-            try:
-                img = self.FLIR.live_view(select_cam)
-                # img = cv2.flip(img, -1)
-                # img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+                # Convert the frame to RGB format
+                img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                img = cv2.flip(img, -1)
 
-                live_img = QtGui.QImage(img, img.shape[1], img.shape[0], QtGui.QImage.Format_RGB888).rgbSwapped()
+                # Convert the frame to QImage
+                live_img = QImage(img, img.shape[1], img.shape[0], QImage.Format_RGB888)
                 live_img_pixmap = QtGui.QPixmap.fromImage(live_img)
-
+                
                 # Setup pixmap with the acquired image
                 live_img_scaled = live_img_pixmap.scaled(cam_id.width(),
                                                          cam_id.height(),
                                                          QtCore.Qt.KeepAspectRatio)
                 # Set the pixmap onto the label
                 cam_id.setPixmap(live_img_scaled)
-                # Align the label to center
+                 # Align the label to center
                 cam_id.setAlignment(QtCore.Qt.AlignCenter)
-            except AttributeError:
-                print("Live view ended")
+
+        return self.frame
+        
         cam_id.setText("Live view disabled.")
 
-    def begin_live_view(self, cam_id, select_cam, button_id):
-        if not self.liveView:
-            self.log_info("Began camera live view.")
+
+    def begin_label_webcam(self, cam_id, button_id):
+        if not self.label_webcamView:
+            self.log_info("Began label camera live view.")
             button_id.setText("Stop Live View")
-            self.liveView = True
+            self.label_webcamView = True
             
-            worker = Worker(self.update_live_view, cam_id, select_cam)
+            worker = Worker(self.update_label_webcam, cam_id)
             self.threadpool.start(worker)
 
         else:
             cam_id.setText("Live view disabled.")
             button_id.setText("Start live view")
-            self.log_info("Ended camera live view")
-            self.liveView = False
+            self.log_info("Ended label camera live view")
+            self.label_webcamView = False
 
-    def set_exposure_manual(self, lab_id, select_cam, spin_id):
-        lab_id.setEnabled(True)
-        spin_id.setEnabled(True)
-        value = spin_id.value()
-        if value is not None:
-            self.log_info("Exposure time set to " + str(value) + " [us]")
-            self.FLIR.set_exposure(select_cam, exposure = float(value))
+    def begin_barcode_webcam(self, cam_id, button_id):
+        if not self.barcode_webcamView:
+            self.log_info("Began label camera live view.")
+            button_id.setText("Stop Live View")
+            self.barcode_webcamView = True
+            
+            worker = Worker(self.update_barcode_webcam, cam_id)
+            self.threadpool.start(worker)
 
-    def set_gain_manual(self, lab_id, select_cam, dspin_id):
-        lab_id.setEnabled(True)
-        dspin_id.setEnabled(True)
-        value = dspin_id.value()
-        if value is not None:
-            self.log_info("Gain level set to " + str(value) + " [dB]")
-            self.FLIR.set_gain(select_cam, gain = float(value))
-
-    def set_gamma(self, lab_id, select_cam, dspin_id):
-        lab_id.setEnabled(True)
-        dspin_id.setEnabled(True)
-        value = dspin_id.value()
-        if value is not None:
-            self.log_info("Gamma set to " + str(value))
-            self.FLIR.set_gamma(select_cam, gamma = float(value))
+        else:
+            cam_id.setText("Live view disabled.")
+            button_id.setText("Start live view")
+            self.log_info("Ended label camera live view")
+            self.barcode_webcamView = False
 
     def capture_set(self):
-        if self.webcamView:
-            self.begin_webcam(cam_id = self.ui.camera_1, button_id = self.ui.pushButton_camera_1)
+        # if self.label_webcamView:
+        #     self.begin_barcode_webcam(cam_id = self.ui.barcode_camera, button_id = self.ui.pushButton_barcode_webcam)
 
         self.output_location_folder = Path(self.output_location).joinpath(self.ui.lineEdit_project.text()).joinpath(self.ui.lineEdit_accession.text())
         if os.path.exists(self.output_location_folder):
@@ -430,10 +381,9 @@ class UI(QMainWindow):
 
         else:
             self.ui.pushButton_capture.setEnabled(False)
-            if self.FLIR0_found:
-                self.capture_image(select_cam = 0, tag = "_label")
+            self.capture_label_webcam(tag = "_label")
             self.ui.pushButton_capture.setEnabled(True)
-            self.begin_webcam(cam_id = self.ui.camera_1, button_id = self.ui.pushButton_camera_1)
+            # self.begin_barcode_webcam(cam_id = self.ui.barcode_camera, button_id = self.ui.pushButton_barcode_webcam)
 
     def show_popup(self):
         button = QMessageBox.question(self, "RAPIID lite Dialog", "A folder with this accession number already exists!\nDo you want to overwrite the existing file/s?")
@@ -442,18 +392,20 @@ class UI(QMainWindow):
 
     def popup_button(self):
         self.ui.pushButton_capture.setEnabled(False)
-        if self.FLIR0_found:
-            self.capture_image(select_cam = 0, tag = "_label")
+        self.capture_label_webcam(tag = "_label")
         self.ui.pushButton_capture.setEnabled(True)
-        self.begin_webcam(cam_id = self.ui.camera_1, button_id = self.ui.pushButton_camera_1)
-        print("webcam on")
+        # self.begin_barcode_webcam(cam_id = self.ui.barcode_camera, button_id = self.ui.pushButton_barcode_webcam)
+        # print("webcam on")
 
-    def capture_image(self, select_cam, tag):
-        # now = datetime.datetime.now()
+    def capture_label_webcam(self, tag):
         self.create_output_folders()
         file_name = str(self.output_location_folder.joinpath(self.ui.lineEdit_accession.text() + tag + self.file_format))
-        self.FLIR.capture_image(select_cam, img_name = file_name)
-        self.log_info("Captured " + str(self.ui.lineEdit_accession.text() + tag + self.file_format))
+        frame_to_save = self.frame
+        try:
+            cv2.imwrite(file_name, frame_to_save)
+            self.log_info("File " + file_name + " saved successfully.")
+        except:
+            self.log_info("File " + file_name + " was unable to be saved!")
 
     def create_output_folders(self):
         self.output_location_folder = Path(self.output_location).joinpath(self.ui.lineEdit_project.text()).joinpath(self.ui.lineEdit_accession.text())
@@ -470,10 +422,10 @@ class UI(QMainWindow):
             config = ymlRW.read_config_file(config_location)
 
             # check if the camera type in the config file matches the connected/selected camera type
-            if config["general"]["camera_type"] != self.camera_type:
-                self.log_warning("The selected config file was generated for a different camera type!")
-                QtWidgets.QMessageBox.critical(self, "Failed to load " + str(config_location.name), "The selected config file was generated for a different camera type!")
-                return
+            # if config["general"]["camera_type"] != self.camera_type:
+            #     self.log_warning("The selected config file was generated for a different camera type!")
+            #     QtWidgets.QMessageBox.critical(self, "Failed to load " + str(config_location.name), "The selected config file was generated for a different camera type!")
+            return
 
             # output path
             self.output_location = config["general"]["output_folder"]
@@ -482,14 +434,14 @@ class UI(QMainWindow):
             # project name
             self.ui.lineEdit_project.setText(config["general"]["project_name"])
 
-            # camera_settings:
-            if config["general"]["camera_type"] == "FLIR":
-                self.ui.spinBox_camera_0_exposure.setValue(config["camera_settings"]["camera_0"]["exposure_time"])
-                self.ui.doubleSpinBox_camera_0_gain.setValue(config["camera_settings"]["camera_0"]["gain_level"])
-                self.ui.doubleSpinBox_camera_0_gamma.setValue(config["camera_settings"]["camera_0"]["gamma"])
+            # # camera_settings:
+            # if config["general"]["camera_type"] == "FLIR":
+            #     self.ui.spinBox_camera_0_exposure.setValue(config["camera_settings"]["camera_0"]["exposure_time"])
+            #     self.ui.doubleSpinBox_camera_0_gain.setValue(config["camera_settings"]["camera_0"]["gain_level"])
+            #     self.ui.doubleSpinBox_camera_0_gamma.setValue(config["camera_settings"]["camera_0"]["gamma"])
 
-            # meta data (exif)
-            self.exif_camera_0 = config["exif_data"]["camera_0"]
+            # # meta data (exif)
+            # self.exif_camera_0 = config["exif_data"]["camera_0"]
 
             self.loadedConfig = True
             self.log_info("Loaded config file successfully!")
@@ -503,14 +455,14 @@ class UI(QMainWindow):
 
         config = {'general': {'project_name': self.ui.lineEdit_project.text(),
                               'output_folder': self.output_location,
-                              'camera_type': self.camera_type,
-                              'camera_0_model': self.camera_0_model,
+                              # 'camera_type': self.camera_type,
+                              # 'camera_0_model': self.camera_0_model,
                               },
-                  'camera_settings': {'camera_0': {'exposure_time': self.ui.spinBox_camera_0_exposure.value(),
-                                                  'gain_level': self.ui.doubleSpinBox_camera_0_gain.value(),
-                                                  'gamma': self.ui.doubleSpinBox_camera_0_gamma.value(),
-                                                  },    
-                                      },
+                  # 'camera_settings': {'camera_0': {'exposure_time': self.ui.spinBox_camera_0_exposure.value(),
+                  #                                 'gain_level': self.ui.doubleSpinBox_camera_0_gain.value(),
+                  #                                 'gamma': self.ui.doubleSpinBox_camera_0_gamma.value(),
+                  #                                 },    
+                  #                     },
                   'exif_data': self.exif_data
                   }
 
@@ -521,40 +473,40 @@ class UI(QMainWindow):
         # WARNING! THESE SETTINGS ARE SPECIFIC TO THE CAMERA USED DURING DEVELOPMENT
         # AND WILL LIKELY NOT APPLY TO YOUR SETUP
         config = {'general': {'project_name': 'untitled_project'},
-                       'exif_data': {'camera_0': {'Make': 'FLIR',
-                                                  'Model': 'BFS-U3-200S6C-C',
-                                                  'SerialNumber': '21188171',
-                                                  'Lens': 'MPZ',
-                                                  'CameraSerialNumber': '21188171',
-                                                  'LensManufacturer': 'Computar',
-                                                  'LensModel': '75.0 f / 3.1',
-                                                  'FocalLength': '75.0',
-                                                  'FocalLengthIn35mmFormat': '203.0'},
-                                    }
+                       # 'exif_data': {'camera_0': {'Make': 'FLIR',
+                       #                            'Model': 'BFS-U3-200S6C-C',
+                       #                            'SerialNumber': '21188171',
+                       #                            'Lens': 'MPZ',
+                       #                            'CameraSerialNumber': '21188171',
+                       #                            'LensManufacturer': 'Computar',
+                       #                            'LensModel': '75.0 f / 3.1',
+                       #                            'FocalLength': '75.0',
+                       #                            'FocalLengthIn35mmFormat': '203.0'},
+                       #              }
                       }
         return config
 
     
-    def disable_inputs(self, cam_id):
-        self.ui.pushButton_camera_+cam_id.setEnabled(False)
-        self.ui.spinBox_camera_+cam_id+_exposure.setEnabled(False)
-        self.ui.doubleSpinBox_camera_+cam_id+_gain.setEnabled(False)
-        self.ui.doubleSpinBox_camera_+cam_id+_gamma.setEnabled(False)
-        self.ui.pushButton_capture.setEnabled(False)
-        self.ui.pushButton_outputFolder.setEnabled(False)
-        self.ui.pushButton_load_config.setEnabled(False)
+    # def disable_inputs(self, cam_id):
+    #     self.ui.pushButton_camera_+cam_id.setEnabled(False)
+    #     self.ui.spinBox_camera_+cam_id+_exposure.setEnabled(False)
+    #     self.ui.doubleSpinBox_camera_+cam_id+_gain.setEnabled(False)
+    #     self.ui.doubleSpinBox_camera_+cam_id+_gamma.setEnabled(False)
+    #     self.ui.pushButton_capture.setEnabled(False)
+    #     self.ui.pushButton_outputFolder.setEnabled(False)
+    #     self.ui.pushButton_load_config.setEnabled(False)
 
-    def enable_inputs(self, cam_id):
-        self.ui.pushButton_camera_+cam_id.setEnabled(True)
-        self.ui.spinBox_camera_+cam_id+_exposure.setEnabled(True)
-        self.ui.doubleSpinBox_camera_+cam_id+_gain.setEnabled(True)
-        self.ui.doubleSpinBox_camera_+cam_id+_gamma.setEnabled(True)
-        self.ui.pushButton_capture.setEnabled(True)
-        self.ui.pushButton_outputFolder.setEnabled(True)
-        self.ui.pushButton_load_config.setEnabled(True)
+    # def enable_inputs(self, cam_id):
+    #     self.ui.pushButton_camera_+cam_id.setEnabled(True)
+    #     self.ui.spinBox_camera_+cam_id+_exposure.setEnabled(True)
+    #     self.ui.doubleSpinBox_camera_+cam_id+_gain.setEnabled(True)
+    #     self.ui.doubleSpinBox_camera_+cam_id+_gamma.setEnabled(True)
+    #     self.ui.pushButton_capture.setEnabled(True)
+    #     self.ui.pushButton_outputFolder.setEnabled(True)
+    #     self.ui.pushButton_load_config.setEnabled(True)
 
     def closeApp(self):
-        self.FLIR0_found = False
+        # self.FLIR0_found = False
         sys.exit()
 
     def closeEvent(self, event):
@@ -562,14 +514,14 @@ class UI(QMainWindow):
         self.exit_program = True
 
         # stop the live view if currently in use
-        if self.liveView:
-            self.begin_live_view(cam_id = self.ui.camera_0, select_cam = 0, button_id = self.ui.pushButton_camera_0)  # sets live view false if already running
+        # if self.liveView:
+        #     self.begin_live_view(cam_id = self.ui.camera_0, select_cam = 0, button_id = self.ui.pushButton_label_webcam)  # sets live view false if already running
 
-        # release cameras
-        if self.FLIR0_found:
-            self.FLIR.exit_cam(0)
+        # # release cameras
+        # if self.FLIR0_found:
+        #     self.FLIR.exit_cam(0)
         
-        self.FLIR.releasePySpin()
+        # self.FLIR.releasePySpin()
 
         print("Application Closed!")
 
