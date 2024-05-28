@@ -23,7 +23,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(-9, 0, 1854, 1050))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 1845, 1067))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.horizontalLayout_9 = QtWidgets.QHBoxLayout(self.scrollAreaWidgetContents)
         self.horizontalLayout_9.setObjectName("horizontalLayout_9")
@@ -57,7 +57,6 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.label_camera.sizePolicy().hasHeightForWidth())
         self.label_camera.setSizePolicy(sizePolicy)
         self.label_camera.setMinimumSize(QtCore.QSize(800, 600))
-        self.label_camera.setMaximumSize(QtCore.QSize(800, 600))
         self.label_camera.setStyleSheet("QFrame, QLabel, QToolTip {\n"
 "    border: 2px solid #8BC34A;\n"
 "    border-radius: 4px;\n"
@@ -119,13 +118,13 @@ class Ui_MainWindow(object):
         self.barcode_webcam_label.setObjectName("barcode_webcam_label")
         self.verticalLayout_3.addWidget(self.barcode_webcam_label)
         self.barcode_camera = QtWidgets.QLabel(self.horizontalWidget)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.barcode_camera.sizePolicy().hasHeightForWidth())
         self.barcode_camera.setSizePolicy(sizePolicy)
-        self.barcode_camera.setMinimumSize(QtCore.QSize(800, 450))
-        self.barcode_camera.setMaximumSize(QtCore.QSize(800, 600))
+        self.barcode_camera.setMinimumSize(QtCore.QSize(500, 250))
+        self.barcode_camera.setMaximumSize(QtCore.QSize(500, 250))
         self.barcode_camera.setStyleSheet("QFrame, QLabel, QToolTip {\n"
 "    border: 2px solid #8BC34A;\n"
 "    border-radius: 4px;\n"

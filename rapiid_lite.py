@@ -107,6 +107,8 @@ class UI(QMainWindow):
         self.file_format = ".jpg"
         self.label_webcamView = False
         self.barcode_webcamView = False
+        self.selected_labelcam = 'Webcam 0'
+        self.selected_barcodecam = 'Webcam 1'
 
         # # Assign camera control features to ui
         self.ui.pushButton_capture.pressed.connect(self.capture_set)
@@ -133,6 +135,7 @@ class UI(QMainWindow):
     
         for webcam in self.webcam_arr_label:
             self.ui.comboBox_selectLabelWebcam.addItem(webcam)
+        self.ui.comboBox_selectLabelWebcam.setCurrentIndex(0)
 
         # List webcams for barcode camera  
         self.index_barcode = 0
@@ -149,6 +152,7 @@ class UI(QMainWindow):
     
         for webcam in self.webcam_arr_barcode:
             self.ui.comboBox_selectBarcodeWebcam.addItem(webcam)
+        self.ui.comboBox_selectBarcodeWebcam.setCurrentIndex(1)
 
         self.ui.comboBox_selectLabelWebcam.currentTextChanged.connect(self.select_label_webcam)
         self.ui.comboBox_selectBarcodeWebcam.currentTextChanged.connect(self.select_barcode_webcam)
@@ -175,7 +179,6 @@ class UI(QMainWindow):
         self.showMaximized()
 
     def select_label_webcam(self):
-        # self.disable_inputs(cam_id = 1)
         selected_camera = self.ui.comboBox_selectLabelWebcam.currentText()
 
         # stop the webcam if currently in use
@@ -185,14 +188,12 @@ class UI(QMainWindow):
         # Select new webcam
         webcam_id = int(selected_camera.split(" ")[1])
         self.cap_label = cv2.VideoCapture(webcam_id)
-        # self.cap_label.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        # self.cap_label.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-        # self.enable_inputs(cam_id = 1)
-        # self.label_webcamView = True
+        self.cap_label.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        self.cap_label.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        self.selected_labelcam = selected_camera
         self.log_info("Selected " + str(selected_camera))
 
     def select_barcode_webcam(self):
-        # self.disable_inputs(cam_id = 1)
         selected_camera = self.ui.comboBox_selectBarcodeWebcam.currentText()
 
         # stop the webcam if currently in use
@@ -204,8 +205,7 @@ class UI(QMainWindow):
         self.cap_barcode = cv2.VideoCapture(webcam_id)
         self.cap_barcode.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap_barcode.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-        # self.enable_inputs(cam_id = 1)
-        # self.barcode_webcamView = True
+        self.selected_barcodecam = selected_camera
         self.log_info("Selected " + str(selected_camera))
 
     def set_output_location(self):
@@ -255,16 +255,22 @@ class UI(QMainWindow):
                   roi = gray[y - 1:y + h + 1, x - 1:x + w + 1]
 
                   # Decode the DataMatrix
-                  if roi.shape[0] > 0:
+                  if roi is not None and roi.size > 0:
                     decoded_data = dmtx.decode(roi)
                     for data in decoded_data:
                         return data.data.decode('utf-8')  # Return the decoded data
+                  else:
+                    break
                   #   try:
                   #     decoded_data = dmtx.decode(roi)
                   #     for data in decoded_data:
                   #         return data.data.decode('utf-8')  # Return the decoded data
                   # except dmtx.PyLibDMTXError:
                   #     continue
+                else:
+                    break
+            else:
+                break
 
         return None
 
@@ -336,37 +342,42 @@ class UI(QMainWindow):
                  # Align the label to center
                 cam_id.setAlignment(QtCore.Qt.AlignCenter)
 
-        return self.frame
-        
-        cam_id.setText("Live view disabled.")
-
-
-    def begin_label_webcam(self, cam_id, button_id):
-        if not self.label_webcamView:
-            self.log_info("Began label camera live view.")
-            button_id.setText("Stop Live View")
-            self.label_webcamView = True
-            
-            worker = Worker(self.update_label_webcam, cam_id)
-            self.threadpool.start(worker)
-
         else:
             cam_id.setText("Live view disabled.")
+
+        return self.frame
+        
+        
+    def begin_label_webcam(self, cam_id, button_id):
+        selected_camera = self.ui.comboBox_selectLabelWebcam.currentText()
+        if not self.label_webcamView:
+            if self.selected_barcodecam != selected_camera:
+                self.log_info("Began label camera live view.")
+                button_id.setText("Stop Live View")
+                self.label_webcamView = True
+            
+                worker = Worker(self.update_label_webcam, cam_id)
+                self.threadpool.start(worker)
+            else:
+                self.log_info("Selected camera is already in use.")
+        else:
             button_id.setText("Start live view")
             self.log_info("Ended label camera live view")
             self.label_webcamView = False
 
     def begin_barcode_webcam(self, cam_id, button_id):
+        selected_camera = self.ui.comboBox_selectBarcodeWebcam.currentText()
         if not self.barcode_webcamView:
-            self.log_info("Began label camera live view.")
-            button_id.setText("Stop Live View")
-            self.barcode_webcamView = True
-            
-            worker = Worker(self.update_barcode_webcam, cam_id)
-            self.threadpool.start(worker)
-
+            if self.selected_labelcam != selected_camera:
+                self.log_info("Began label camera live view.")
+                button_id.setText("Stop Live View")
+                self.barcode_webcamView = True
+                
+                worker = Worker(self.update_barcode_webcam, cam_id)
+                self.threadpool.start(worker)
+            else:
+                self.log_info("Selected camera is already in use.")
         else:
-            cam_id.setText("Live view disabled.")
             button_id.setText("Start live view")
             self.log_info("Ended label camera live view")
             self.barcode_webcamView = False
