@@ -23,10 +23,10 @@
       <widget class="QWidget" name="scrollAreaWidgetContents">
        <property name="geometry">
         <rect>
-         <x>-9</x>
+         <x>0</x>
          <y>0</y>
-         <width>1854</width>
-         <height>1050</height>
+         <width>1845</width>
+         <height>1067</height>
         </rect>
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout_9">
@@ -88,12 +88,6 @@
                 </sizepolicy>
                </property>
                <property name="minimumSize">
-                <size>
-                 <width>800</width>
-                 <height>600</height>
-                </size>
-               </property>
-               <property name="maximumSize">
                 <size>
                  <width>800</width>
                  <height>600</height>
@@ -230,21 +224,21 @@
              <item>
               <widget class="QLabel" name="barcode_camera">
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
                <property name="minimumSize">
                 <size>
-                 <width>800</width>
-                 <height>450</height>
+                 <width>500</width>
+                 <height>250</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>800</width>
-                 <height>600</height>
+                 <width>500</width>
+                 <height>250</height>
                 </size>
                </property>
                <property name="styleSheet">
