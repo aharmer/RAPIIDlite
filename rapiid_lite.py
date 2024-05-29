@@ -14,24 +14,7 @@ from qt_material import apply_stylesheet
 
 
 class WorkerSignals(QtCore.QObject):
-    '''
-    Defines the signals available from a running worker thread.
-
-    Supported signals are:
-
-    finished
-        No data
-
-    error
-        `tuple` (exctype, value, traceback.format_exc() )
-
-    result
-        `object` data returned from processing, anything
-
-    progress
-        `int` indicating % progress
-
-    '''
+    
     finished = QtCore.pyqtSignal()
     error = QtCore.pyqtSignal(tuple)
     result = QtCore.pyqtSignal(object)
@@ -39,18 +22,6 @@ class WorkerSignals(QtCore.QObject):
 
 
 class Worker(QtCore.QRunnable):
-    '''
-    Worker thread
-
-    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
-
-    :param callback: The function callback to run on this worker thread. Supplied args and
-                     kwargs will be passed through to the runner.
-    :type callback: function
-    :param args: Arguments to pass to the callback function
-    :param kwargs: Keywords to pass to the callback function
-
-    '''
 
     def __init__(self, fn, *args, **kwargs):
         super(Worker, self).__init__()
@@ -66,10 +37,6 @@ class Worker(QtCore.QRunnable):
 
     @QtCore.pyqtSlot()
     def run(self):
-        '''
-        Initialise the runner function with passed args, kwargs.
-        '''
-
         # Retrieve args/kwargs here; and fire processing using them
         try:
             result = self.fn(*self.args, **self.kwargs)
@@ -101,9 +68,6 @@ class UI(QMainWindow):
         print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
 
         # Set initial camera variables and buttons
-        # self.liveView = False
-        # self.camera_type = None
-        # self.camera_0_model = None
         self.file_format = ".jpg"
         self.label_webcamView = False
         self.barcode_webcamView = False
@@ -173,8 +137,6 @@ class UI(QMainWindow):
         self.ui.pushButton_load_config.pressed.connect(self.loadConfig)
         self.ui.pushButton_writeConfig.pressed.connect(self.writeConfig)
 
-        # self.exif_data = self.config["exif_data"]
-
         # Show the app
         self.showMaximized()
 
@@ -240,17 +202,7 @@ class UI(QMainWindow):
 
                 # Check if the aspect ratio is close to 1 (square shape)
                 if 0.8 <= aspect_ratio <= 1.2:
-                  # x1 = x
-                  # y1 = y
-                  # x2 = x + w
-                  # y2 = y + h
                   
-                  # x_centre = (x2 - x1)/2 + x1
-                  # y_centre = (y2 - y1)/2 + y1
-                  
-                  # cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 5)
-                  # cv2.circle(frame, (int(x_centre), int(y_centre)), 3, (0, 0, 255), 3)
-                      
                   # Crop the detected DataMatrix region
                   roi = gray[y - 1:y + h + 1, x - 1:x + w + 1]
 
@@ -261,12 +213,6 @@ class UI(QMainWindow):
                         return data.data.decode('utf-8')  # Return the decoded data
                   else:
                     break
-                  #   try:
-                  #     decoded_data = dmtx.decode(roi)
-                  #     for data in decoded_data:
-                  #         return data.data.decode('utf-8')  # Return the decoded data
-                  # except dmtx.PyLibDMTXError:
-                  #     continue
                 else:
                     break
             else:
@@ -283,17 +229,7 @@ class UI(QMainWindow):
                 # Convert the frame to RGB format
                 img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 img = cv2.flip(img, -1)
-                # h, w, _ = frame.shape
-                # scale = 2
-                # centerX, centerY = int(h/2),int(w/2)
-                # radiusX, radiusY = int(centerX*(1/scale)), int(centerY*(1/scale))
-
-                # minX, maxX = centerX - radiusX, centerX + radiusX
-                # minY, maxY = centerY - radiusY, centerY + radiusY
-
-                # crop = img[minX:maxX, minY:maxY]
-                # zoom = cv2.resize(crop, (w, h), cv2.INTER_LANCZOS4)
-
+                
                 decoded_data = self.decode_datamatrix(frame)
 
                 if decoded_data:
@@ -383,9 +319,6 @@ class UI(QMainWindow):
             self.barcode_webcamView = False
 
     def capture_set(self):
-        # if self.label_webcamView:
-        #     self.begin_barcode_webcam(cam_id = self.ui.barcode_camera, button_id = self.ui.pushButton_barcode_webcam)
-
         self.output_location_folder = Path(self.output_location).joinpath(self.ui.lineEdit_project.text()).joinpath(self.ui.lineEdit_accession.text())
         if os.path.exists(self.output_location_folder):
             self.show_popup()
@@ -405,8 +338,6 @@ class UI(QMainWindow):
         self.ui.pushButton_capture.setEnabled(False)
         self.capture_label_webcam(tag = "_label")
         self.ui.pushButton_capture.setEnabled(True)
-        # self.begin_barcode_webcam(cam_id = self.ui.barcode_camera, button_id = self.ui.pushButton_barcode_webcam)
-        # print("webcam on")
 
     def capture_label_webcam(self, tag):
         self.create_output_folders()
@@ -432,10 +363,6 @@ class UI(QMainWindow):
             config_location = Path(config_location)
             config = ymlRW.read_config_file(config_location)
 
-            # check if the camera type in the config file matches the connected/selected camera type
-            # if config["general"]["camera_type"] != self.camera_type:
-            #     self.log_warning("The selected config file was generated for a different camera type!")
-            #     QtWidgets.QMessageBox.critical(self, "Failed to load " + str(config_location.name), "The selected config file was generated for a different camera type!")
             return
 
             # output path
@@ -444,15 +371,6 @@ class UI(QMainWindow):
 
             # project name
             self.ui.lineEdit_project.setText(config["general"]["project_name"])
-
-            # # camera_settings:
-            # if config["general"]["camera_type"] == "FLIR":
-            #     self.ui.spinBox_camera_0_exposure.setValue(config["camera_settings"]["camera_0"]["exposure_time"])
-            #     self.ui.doubleSpinBox_camera_0_gain.setValue(config["camera_settings"]["camera_0"]["gain_level"])
-            #     self.ui.doubleSpinBox_camera_0_gamma.setValue(config["camera_settings"]["camera_0"]["gamma"])
-
-            # # meta data (exif)
-            # self.exif_camera_0 = config["exif_data"]["camera_0"]
 
             self.loadedConfig = True
             self.log_info("Loaded config file successfully!")
@@ -466,14 +384,7 @@ class UI(QMainWindow):
 
         config = {'general': {'project_name': self.ui.lineEdit_project.text(),
                               'output_folder': self.output_location,
-                              # 'camera_type': self.camera_type,
-                              # 'camera_0_model': self.camera_0_model,
                               },
-                  # 'camera_settings': {'camera_0': {'exposure_time': self.ui.spinBox_camera_0_exposure.value(),
-                  #                                 'gain_level': self.ui.doubleSpinBox_camera_0_gain.value(),
-                  #                                 'gamma': self.ui.doubleSpinBox_camera_0_gamma.value(),
-                  #                                 },    
-                  #                     },
                   'exif_data': self.exif_data
                   }
 
@@ -481,59 +392,16 @@ class UI(QMainWindow):
         self.log_info("Exported config file successfully!")
 
     def get_default_values(self):
-        # WARNING! THESE SETTINGS ARE SPECIFIC TO THE CAMERA USED DURING DEVELOPMENT
-        # AND WILL LIKELY NOT APPLY TO YOUR SETUP
         config = {'general': {'project_name': 'untitled_project'},
-                       # 'exif_data': {'camera_0': {'Make': 'FLIR',
-                       #                            'Model': 'BFS-U3-200S6C-C',
-                       #                            'SerialNumber': '21188171',
-                       #                            'Lens': 'MPZ',
-                       #                            'CameraSerialNumber': '21188171',
-                       #                            'LensManufacturer': 'Computar',
-                       #                            'LensModel': '75.0 f / 3.1',
-                       #                            'FocalLength': '75.0',
-                       #                            'FocalLengthIn35mmFormat': '203.0'},
-                       #              }
                       }
         return config
 
-    
-    # def disable_inputs(self, cam_id):
-    #     self.ui.pushButton_camera_+cam_id.setEnabled(False)
-    #     self.ui.spinBox_camera_+cam_id+_exposure.setEnabled(False)
-    #     self.ui.doubleSpinBox_camera_+cam_id+_gain.setEnabled(False)
-    #     self.ui.doubleSpinBox_camera_+cam_id+_gamma.setEnabled(False)
-    #     self.ui.pushButton_capture.setEnabled(False)
-    #     self.ui.pushButton_outputFolder.setEnabled(False)
-    #     self.ui.pushButton_load_config.setEnabled(False)
-
-    # def enable_inputs(self, cam_id):
-    #     self.ui.pushButton_camera_+cam_id.setEnabled(True)
-    #     self.ui.spinBox_camera_+cam_id+_exposure.setEnabled(True)
-    #     self.ui.doubleSpinBox_camera_+cam_id+_gain.setEnabled(True)
-    #     self.ui.doubleSpinBox_camera_+cam_id+_gamma.setEnabled(True)
-    #     self.ui.pushButton_capture.setEnabled(True)
-    #     self.ui.pushButton_outputFolder.setEnabled(True)
-    #     self.ui.pushButton_load_config.setEnabled(True)
-
     def closeApp(self):
-        # self.FLIR0_found = False
         sys.exit()
 
     def closeEvent(self, event):
         # report the program is to be closed so threads can be exited
         self.exit_program = True
-
-        # stop the live view if currently in use
-        # if self.liveView:
-        #     self.begin_live_view(cam_id = self.ui.camera_0, select_cam = 0, button_id = self.ui.pushButton_label_webcam)  # sets live view false if already running
-
-        # # release cameras
-        # if self.FLIR0_found:
-        #     self.FLIR.exit_cam(0)
-        
-        # self.FLIR.releasePySpin()
-
         print("Application Closed!")
 
 # Initialise the app
