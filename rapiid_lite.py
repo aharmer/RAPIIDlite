@@ -211,12 +211,12 @@ class UI(QMainWindow):
                     decoded_data = dmtx.decode(roi)
                     for data in decoded_data:
                         return data.data.decode('utf-8')  # Return the decoded data
-                  else:
-                    break
-                else:
-                    break
-            else:
-                break
+            #       else:
+            #         break
+            #     else:
+            #         break
+            # else:
+            #     break
 
         return None
 
@@ -385,7 +385,7 @@ class UI(QMainWindow):
         config = {'general': {'project_name': self.ui.lineEdit_project.text(),
                               'output_folder': self.output_location,
                               },
-                  'exif_data': self.exif_data
+                  # 'exif_data': self.exif_data
                   }
 
         ymlRW.write_config_file(config, Path(self.output_location_folder))
