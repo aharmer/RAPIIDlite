@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\\Users\\HarmerA\\OneDrive - MWLR\\repos\\RAPIIDlite\\GUI\\rapiidlite_GUI.ui'
+# Form implementation generated from reading ui file 'C:\\Users\\HarmerA\\Dropbox\\data\\RAPIIDlite\\GUI\rapiidlite_GUI.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.7
 #
@@ -200,17 +200,28 @@ class Ui_MainWindow(object):
         self.verticalLayout_4.addWidget(self.display_path)
         spacerItem5 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         self.verticalLayout_4.addItem(spacerItem5)
-        self.label_project = QtWidgets.QLabel(self.verticalWidget_4)
+        self.label_creator = QtWidgets.QLabel(self.verticalWidget_4)
         font = QtGui.QFont()
         font.setPointSize(10)
         font.setBold(True)
         font.setWeight(75)
-        self.label_project.setFont(font)
-        self.label_project.setObjectName("label_project")
-        self.verticalLayout_4.addWidget(self.label_project)
-        self.lineEdit_project = QtWidgets.QLineEdit(self.verticalWidget_4)
-        self.lineEdit_project.setObjectName("lineEdit_project")
-        self.verticalLayout_4.addWidget(self.lineEdit_project)
+        self.label_creator.setFont(font)
+        self.label_creator.setObjectName("label_creator")
+        self.verticalLayout_4.addWidget(self.label_creator)
+        self.lineEdit_creator = QtWidgets.QLineEdit(self.verticalWidget_4)
+        self.lineEdit_creator.setObjectName("lineEdit_creator")
+        self.verticalLayout_4.addWidget(self.lineEdit_creator)
+        self.label_taxon = QtWidgets.QLabel(self.verticalWidget_4)
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        font.setBold(True)
+        font.setWeight(75)
+        self.label_taxon.setFont(font)
+        self.label_taxon.setObjectName("label_taxon")
+        self.verticalLayout_4.addWidget(self.label_taxon)
+        self.lineEdit_taxon = QtWidgets.QLineEdit(self.verticalWidget_4)
+        self.lineEdit_taxon.setObjectName("lineEdit_taxon")
+        self.verticalLayout_4.addWidget(self.lineEdit_taxon)
         self.label_accession = QtWidgets.QLabel(self.verticalWidget_4)
         self.label_accession.setEnabled(True)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
@@ -280,9 +291,10 @@ class Ui_MainWindow(object):
         self.pushButton_writeConfig.setText(_translate("MainWindow", "Save config file..."))
         self.pushButton_outputFolder.setText(_translate("MainWindow", "Output folder..."))
         self.display_path.setText(_translate("MainWindow", "Path"))
-        self.label_project.setText(_translate("MainWindow", "Project name"))
+        self.label_creator.setText(_translate("MainWindow", "Creator"))
+        self.label_taxon.setText(_translate("MainWindow", "Taxon name"))
         self.label_accession.setText(_translate("MainWindow", "NZAC accession no."))
-        self.pushButton_capture.setText(_translate("MainWindow", "Capture image set"))
+        self.pushButton_capture.setText(_translate("MainWindow", "Capture image"))
         self.label_log.setText(_translate("MainWindow", "Log"))
 
 

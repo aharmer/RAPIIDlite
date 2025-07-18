@@ -10,7 +10,7 @@ def read_config_file(path):
 
 
 def write_config_file(content, path):
-    with open(path.joinpath(content["general"]["project_name"] + "_config.yaml"), "w") as f:
+    with open(path.joinpath(content["general"]["taxon_name"] + "_config.yaml"), "w") as f:
         yaml.dump(content, f, default_flow_style=False, sort_keys=False)
 
 

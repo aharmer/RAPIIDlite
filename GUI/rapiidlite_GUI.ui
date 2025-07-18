@@ -441,7 +441,7 @@
                </spacer>
               </item>
               <item>
-               <widget class="QLabel" name="label_project">
+               <widget class="QLabel" name="label_creator">
                 <property name="font">
                  <font>
                   <pointsize>10</pointsize>
@@ -450,12 +450,29 @@
                  </font>
                 </property>
                 <property name="text">
-                 <string>Project name</string>
+                 <string>Creator</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="lineEdit_project"/>
+               <widget class="QLineEdit" name="lineEdit_creator"/>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_taxon">
+                <property name="font">
+                 <font>
+                  <pointsize>10</pointsize>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Taxon name</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="lineEdit_taxon"/>
               </item>
               <item>
                <widget class="QLabel" name="label_accession">
@@ -512,7 +529,7 @@
                  </font>
                 </property>
                 <property name="text">
-                 <string>Capture image set</string>
+                 <string>Capture image</string>
                 </property>
                </widget>
               </item>

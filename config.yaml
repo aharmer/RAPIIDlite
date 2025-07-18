@@ -1,5 +1,6 @@
 general:
-  project_name: untitled_project
+  creator: new_user
+  taxon_name: untitled_project
   output_folder: 
 #   camera_type: FLIR
 # camera_settings:
