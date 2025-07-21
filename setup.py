@@ -12,15 +12,15 @@ excludes = ['cx_Freeze','setuptools','tkinter']
 # Dependencies are automatically detected, but some modules need help.
 # packages = ['kivy','kivymd', 'ffpyplayer','gtts']    
 base = None
-shortcutName = None
-shortcutDir = None
+shortcut_name = None
+shortcut_dir = None
 if sys.platform == "win32":
     base = "Win32GUI"
-    shortcutName='RAPIIDlite'
-    shortcutDir="DesktopFolder"
+    shortcut_name='RAPIIDlite'
+    shortcut_dir="DesktopFolder"
 setup(
     name = 'RAPIIDlite',
-    version = '1.0',
+    version = '2.0',
     description = 'RAked Pinned Insect Imaging Device (Lite)',
     author = 'A.M.T. Harmer',
     author_email = 'harmera@landcareresearch.co.nz',
@@ -33,6 +33,6 @@ setup(
     executables = [Executable('rapiid_lite.py', 
     base = base, # "Console", base, # None
     icon ='images/RAPIIDlite_icon.ico', 
-    shortcutName = shortcutName, 
-    shortcutDir = shortcutDir)]
+    shortcut_name = shortcut_name, 
+    shortcut_dir = shortcut_dir)]
 )
