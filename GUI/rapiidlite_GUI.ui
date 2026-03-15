@@ -45,195 +45,46 @@
            <property name="bottomMargin">
             <number>10</number>
            </property>
+
+           <!-- Label cameras column: Python adds LabelCameraSlot widgets here dynamically -->
            <item>
-            <layout class="QVBoxLayout" name="verticalLayout">
-             <item>
-              <widget class="QLabel" name="label_webcam_label">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>10</pointsize>
-                 <weight>75</weight>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="text">
-                <string>Label camera</string>
-               </property>
+            <widget class="QScrollArea" name="labelCameraScrollArea">
+             <property name="widgetResizable">
+              <bool>true</bool>
+             </property>
+             <property name="horizontalScrollBarPolicy">
+              <enum>Qt::ScrollBarAlwaysOff</enum>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::NoFrame</enum>
+             </property>
+             <widget class="QWidget" name="labelCameraScrollContents">
+              <layout class="QVBoxLayout" name="labelCameraContainer_layout">
                <property name="alignment">
-                <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+                <set>Qt::AlignTop</set>
                </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_camera">
-               <property name="enabled">
-                <bool>true</bool>
-               </property>
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>800</width>
-                 <height>600</height>
-                </size>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QFrame, QLabel, QToolTip {
-    border: 2px solid #8BC34A;
-    border-radius: 4px;
-    padding: 2px;
-}</string>
-               </property>
-               <property name="frameShape">
-                <enum>QFrame::Box</enum>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="scaledContents">
-                <bool>true</bool>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_0">
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout_6">
-                 <item>
-                  <widget class="QLabel" name="label_label_2">
-                   <property name="text">
-                    <string>Label camera</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="pushButton_label_webcam">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>153</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="text">
-                    <string>Start live view</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout_2">
-                 <item>
-                  <widget class="QLabel" name="label_selectLabelCam">
-                   <property name="text">
-                    <string>Select camera</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QComboBox" name="comboBox_selectLabelCam"/>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout_7">
-                 <item>
-                  <widget class="QLabel" name="flir_0_exposure_label">
-                   <property name="text">
-                    <string>Exposure time (us)</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QSpinBox" name="flir_0_exposure_spinBox"/>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout_8">
-                 <item>
-                  <widget class="QLabel" name="flir_0_gain_label">
-                   <property name="text">
-                    <string>Gain level (dB)</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QSpinBox" name="flir_0_gain_spinBox"/>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout_9">
-                 <item>
-                  <widget class="QLabel" name="flir_0_gamma_label">
-                   <property name="text">
-                    <string>Gamma correction</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QSpinBox" name="flir_0_gamma_spinBox"/>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <spacer name="horizontalSpacer_2">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>40</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
               </layout>
-             </item>
-             <item>
-              <spacer name="verticalSpacer_2">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
+             </widget>
+            </widget>
            </item>
+
+           <!-- Barcode camera column — wrapped in a fixed-width widget so the
+                label camera scroll area takes all remaining horizontal space -->
            <item>
-            <layout class="QVBoxLayout" name="verticalLayout_3">
+            <widget class="QWidget" name="barcodeColumnWidget" native="true">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>520</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_3">
              <item>
               <widget class="QLabel" name="barcode_webcam_label">
                <property name="sizePolicy">
@@ -242,10 +93,12 @@
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
-               <property name="maximumSize">
+               <!-- No maximumSize height cap — height is set by minimumSize below
+                    so it matches the LabelCameraSlot header row (label + Remove button) -->
+               <property name="minimumSize">
                 <size>
-                 <width>16777215</width>
-                 <height>25</height>
+                 <width>0</width>
+                 <height>32</height>
                 </size>
                </property>
                <property name="font">
@@ -379,7 +232,10 @@
               </spacer>
              </item>
             </layout>
+            </widget>
            </item>
+
+           <!-- Right control panel -->
            <item>
             <widget class="QWidget" name="verticalWidget_4" native="true">
              <property name="sizePolicy">
@@ -413,6 +269,34 @@
               <property name="rightMargin">
                <number>5</number>
               </property>
+              <item>
+               <widget class="QPushButton" name="pushButton_add_label_cam">
+                <property name="font">
+                 <font>
+                  <pointsize>10</pointsize>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>+ Add label camera</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="verticalSpacer_7">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Fixed</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>15</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
               <item>
                <widget class="QPushButton" name="pushButton_load_config">
                 <property name="text">
@@ -634,6 +518,7 @@
              </layout>
             </widget>
            </item>
+
           </layout>
          </widget>
         </item>
