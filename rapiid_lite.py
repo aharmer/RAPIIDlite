@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from GUI.rapiidlite_GUI import Ui_MainWindow  # importing main window of the GUI
 import cv2
+import numpy as np
 import pylibdmtx.pylibdmtx as dmtx
 
 # Optional imports with error handling
@@ -87,7 +88,8 @@ class Worker(QtCore.QRunnable):
 class FLIRCamera:
     """Handles all PySpin operations for a single FLIR camera."""
 
-    def __init__(self):
+    def __init__(self, camera_index=0):
+        self.camera_index = camera_index
         self.system = None
         self.cam_list = None
         self.camera = None
@@ -104,7 +106,12 @@ class FLIRCamera:
                 print("No FLIR cameras detected")
                 self.cleanup()
                 return False
-            self.camera = self.cam_list[0]
+            if self.camera_index >= self.cam_list.GetSize():
+                print(f"FLIR camera index {self.camera_index} out of range "
+                      f"({self.cam_list.GetSize()} camera(s) found)")
+                self.cleanup()
+                return False
+            self.camera = self.cam_list[self.camera_index]
             self.camera.Init()
 
             try:
@@ -330,10 +337,10 @@ class ExifManager:
             return False, f"Failed to add EXIF data: {e}"
 
     @staticmethod
-    def get_csv_data(creator, taxon, accession, file_format, device_info=""):
+    def get_csv_data(creator, taxon, accession, file_format, device_info="", tag="_label"):
         now = datetime.datetime.now()
         return {
-            'image_filename': f"{accession}_label{file_format}",
+            'image_filename': f"{accession}{tag}{file_format}",
             'accession_number': accession,
             'taxon_name': taxon,
             'image_format': file_format.replace('.', '').upper(),
@@ -392,30 +399,33 @@ class LabelCameraSlot(QWidget):
     these dynamically and iterates over them at capture time.
     """
 
-    def __init__(self, slot_index, webcams, flir_camera, frame_signal, parent=None):
+    def __init__(self, slot_index, webcams, flir_count, frame_signal, parent=None):
         super().__init__(parent)
         self.slot_index = slot_index
-        self.flir_camera = flir_camera       # shared FLIRCamera reference from UI
-        self.frame_signal = frame_signal     # UI._label_frame_signal
+        self.flir_count = flir_count
+        self.frame_signal = frame_signal
+
+        # Each slot owns its own FLIRCamera instance so multiple slots can
+        # use different physical FLIR cameras independently.
+        self.flir_camera = None
 
         # Per-slot streaming state
         self.label_webcamView = False
         self.label_camera_type = 'Webcam'
         self.cap = None
-        self.frame = None                    # most recent BGR frame, used for capture
+        self.frame = None
         self.selected_camera = webcams[0] if webcams else ''
 
-        # Debounce timer: apply FLIR settings 400ms after user stops adjusting spinboxes
         self._settings_timer = QtCore.QTimer()
         self._settings_timer.setSingleShot(True)
         self._settings_timer.setInterval(400)
         self._settings_timer.timeout.connect(self._apply_camera_settings)
 
-        self._build_ui(webcams)
+        self._build_ui(webcams, flir_count)
 
     # ── UI construction ────────────────────────────────────────────────────────
 
-    def _build_ui(self, webcams):
+    def _build_ui(self, webcams, flir_count):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 8)
 
@@ -455,23 +465,26 @@ class LabelCameraSlot(QWidget):
         btn_col.addWidget(self.start_btn)
         controls.addLayout(btn_col)
 
-        # Camera selection dropdown
+        # Camera selection dropdown — webcams + numbered FLIR entries
         cam_col = QVBoxLayout()
         cam_col.addWidget(QLabel("Select camera"))
         self.cam_combo = QComboBox()
         for name in webcams:
             self.cam_combo.addItem(name)
-        if FLIR_AVAILABLE:
-            self.cam_combo.addItem("FLIR Camera")
+        for i in range(flir_count):
+            self.cam_combo.addItem(f"FLIR Camera {i}")
         cam_col.addWidget(self.cam_combo)
         controls.addLayout(cam_col)
 
-        # Exposure spinbox (FLIR only)
+        # Exposure spinbox — displayed in milliseconds, converted to µs for FLIR
         exp_col = QVBoxLayout()
-        exp_col.addWidget(QLabel("Exposure time (us)"))
-        self.exposure_spinbox = QSpinBox()
-        self.exposure_spinbox.setRange(1, 1000000)
-        self.exposure_spinbox.setValue(50000)
+        exp_col.addWidget(QLabel("Exposure (ms)"))
+        self.exposure_spinbox = QDoubleSpinBox()
+        self.exposure_spinbox.setRange(0.1, 1000.0)   # 100 µs – 1,000,000 µs
+        self.exposure_spinbox.setDecimals(1)
+        self.exposure_spinbox.setSingleStep(1.0)
+        self.exposure_spinbox.setValue(50.0)            # default 50 ms = 50,000 µs
+        self.exposure_spinbox.setSuffix(" ms")
         exp_col.addWidget(self.exposure_spinbox)
         controls.addLayout(exp_col)
 
@@ -507,9 +520,13 @@ class LabelCameraSlot(QWidget):
 
         # Wire up signals
         self.cam_combo.currentTextChanged.connect(self._on_camera_changed)
-        self.exposure_spinbox.valueChanged.connect(self._settings_timer.start)
-        self.gain_spinbox.valueChanged.connect(self._settings_timer.start)
-        self.gamma_spinbox.valueChanged.connect(self._settings_timer.start)
+        # Use lambda to discard the emitted int value — QTimer.start() takes an
+        # optional interval argument, so connecting valueChanged(int) directly
+        # would call start(new_spinbox_value), using the spinbox value as the
+        # timer interval in ms rather than the pre-set 400ms debounce interval.
+        self.exposure_spinbox.valueChanged.connect(lambda _: self._settings_timer.start())
+        self.gain_spinbox.valueChanged.connect(lambda _: self._settings_timer.start())
+        self.gamma_spinbox.valueChanged.connect(lambda _: self._settings_timer.start())
 
         # Open the initial camera handle
         if webcams:
@@ -523,14 +540,18 @@ class LabelCameraSlot(QWidget):
         self.gamma_spinbox.setEnabled(enabled)
 
     def _open_cap(self, camera_name):
-        """Open a VideoCapture handle for a webcam device."""
+        """Open a VideoCapture handle for a webcam device.
+
+        Uses DirectShow on Windows to avoid MSMF grab errors (-1072873821).
+        """
         try:
             if self.cap:
                 self.cap.release()
                 self.cap = None
             if camera_name.startswith("Webcam"):
                 webcam_id = int(camera_name.split()[-1])
-                self.cap = cv2.VideoCapture(webcam_id)
+                backend = cv2.CAP_DSHOW if sys.platform == "win32" else cv2.CAP_ANY
+                self.cap = cv2.VideoCapture(webcam_id, backend)
                 self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
                 self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         except Exception as e:
@@ -539,19 +560,31 @@ class LabelCameraSlot(QWidget):
     def _on_camera_changed(self, selected):
         """Respond to the user picking a different camera in the dropdown."""
         try:
+            # Clean up existing FLIR instance if switching away from it
+            if self.flir_camera and self.flir_camera.is_initialized:
+                self.flir_camera.stop_acquisition()
+                self.flir_camera.cleanup()
+                self.flir_camera = None
+
             if selected.startswith("Webcam"):
                 self.label_camera_type = 'Webcam'
                 self._set_flir_controls_enabled(False)
                 self.selected_camera = selected
                 self._open_cap(selected)
-            elif selected == 'FLIR Camera' and FLIR_AVAILABLE:
+
+            elif selected.startswith("FLIR Camera") and FLIR_AVAILABLE:
                 self.label_camera_type = 'FLIR'
                 self._set_flir_controls_enabled(True)
-                if self.flir_camera and self.flir_camera.initialize():
+                # Parse index from "FLIR Camera N"
+                flir_index = int(selected.split()[-1])
+                self.flir_camera = FLIRCamera(camera_index=flir_index)
+                if self.flir_camera.initialize():
                     self.selected_camera = selected
                     self._apply_camera_settings()
                 else:
-                    print(f"Slot {self.slot_index}: FLIR camera failed to initialize")
+                    print(f"Slot {self.slot_index}: FLIR Camera {flir_index} failed to initialize")
+                    self.flir_camera = None
+
         except Exception as e:
             print(f"Slot {self.slot_index}: error changing camera: {e}")
 
@@ -562,7 +595,7 @@ class LabelCameraSlot(QWidget):
                 return
             if not (self.flir_camera and self.flir_camera.is_initialized):
                 return
-            exposure = self.exposure_spinbox.value()
+            exposure = self.exposure_spinbox.value() * 1000.0   # ms → µs
             gain = self.gain_spinbox.value()
             gamma = self.gamma_spinbox.value() / 100.0
             was_streaming = self.label_webcamView
@@ -606,11 +639,84 @@ class LabelCameraSlot(QWidget):
         return "Unknown device"
 
     def cleanup(self):
-        """Release the webcam VideoCapture handle. FLIR is managed by UI."""
+        """Release all camera resources owned by this slot."""
         self.label_webcamView = False
         if self.cap:
             self.cap.release()
             self.cap = None
+        if self.flir_camera and self.flir_camera.is_initialized:
+            self.flir_camera.stop_acquisition()
+            self.flir_camera.cleanup()
+            self.flir_camera = None
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Reusable progress dialog
+# ──────────────────────────────────────────────────────────────────────────────
+
+class ProgressDialog(QDialog):
+    """
+    A small, always-on-top dialog with a status label and progress bar.
+
+    Usage — indeterminate (e.g. discovery):
+        dlg = ProgressDialog(parent, title="Discovering cameras",
+                             message="Searching for connected cameras…")
+        dlg.show()
+        # … later:
+        dlg.close()
+
+    Usage — determinate (e.g. multi-camera capture):
+        dlg = ProgressDialog(parent, title="Capturing",
+                             message="Saving images…", maximum=3)
+        dlg.show()
+        dlg.set_step(1, "Capturing camera 1 of 3…")
+        dlg.set_step(2, "Capturing camera 2 of 3…")
+        dlg.set_step(3, "Capturing camera 3 of 3…")
+        dlg.close()
+    """
+
+    def __init__(self, parent, title, message, maximum=0):
+        """
+        maximum=0  → indeterminate (bouncing) bar
+        maximum>0  → determinate bar, range 0..maximum
+        """
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setWindowFlags(
+            Qt.Dialog |
+            Qt.WindowTitleHint |
+            Qt.WindowStaysOnTopHint |
+            Qt.CustomizeWindowHint   # hides the close button so user can't dismiss it
+        )
+        self.setModal(True)
+        self.setMinimumWidth(360)
+        self.setSizeGripEnabled(False)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(12)
+
+        self._label = QLabel(message)
+        self._label.setWordWrap(True)
+        self._label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self._label)
+
+        self._bar = QProgressBar()
+        self._bar.setMinimum(0)
+        self._bar.setMaximum(maximum)   # 0 = indeterminate
+        self._bar.setValue(0)
+        self._bar.setTextVisible(maximum > 0)
+        self._bar.setMinimumHeight(22)
+        layout.addWidget(self._bar)
+
+        self.adjustSize()
+
+    def set_step(self, step, message=None):
+        """Advance the bar to `step` and optionally update the label text."""
+        self._bar.setValue(step)
+        if message:
+            self._label.setText(message)
+        QApplication.processEvents()   # keep UI responsive between steps
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -640,17 +746,13 @@ class UI(QMainWindow):
             self.file_format = ".jpg"
             self.label_slots = []           # list[LabelCameraSlot]
             self._all_webcams = []          # full discovered webcam list (for adding new slots)
+            self._flir_count = 0            # number of FLIR cameras found at discovery
 
             # Barcode camera
             self.barcode_webcamView = False
             self.selected_barcodecam = 'Webcam 1'
             self.webcam_arr_barcode = []
             self.cap_barcode = None
-
-            # FLIR (shared across all label slots — only one slot should use FLIR at a time)
-            self.flir_camera = None
-            if FLIR_AVAILABLE:
-                self.flir_camera = FLIRCamera()
 
             # ── Setup that doesn't need camera hardware ───────────────────────
             self.setup_ui_connections()
@@ -661,6 +763,15 @@ class UI(QMainWindow):
             self.showMaximized()
             self._set_camera_controls_enabled(False)
             self.statusBar().showMessage("Discovering cameras…")
+
+            self._discovery_dlg = ProgressDialog(
+                self,
+                title="Please wait",
+                message="Searching for connected cameras…\n"
+                        "This may take a few seconds.",
+            )
+            self._discovery_dlg.show()
+            QApplication.processEvents()
 
             worker = Worker(self._discover_webcams)
             worker.signals.result.connect(self._on_cameras_discovered)
@@ -675,41 +786,81 @@ class UI(QMainWindow):
     # ── Camera discovery ───────────────────────────────────────────────────────
 
     def _discover_webcams(self, **kwargs):
-        """Scan webcam indices. Runs on a worker thread — can stall on slow systems."""
+        """Scan webcam indices and count FLIR cameras. Runs on a worker thread.
+
+        On Windows, cv2.VideoCapture(index, CAP_DSHOW) can hang indefinitely
+        when probing an index with no device. Each probe runs in a daemon thread
+        with a 3-second timeout to avoid blocking forever.
+
+        Returns a dict: {'webcams': [...], 'flir_count': N}
+        """
+        import threading
+
+        backend = cv2.CAP_DSHOW if sys.platform == "win32" else cv2.CAP_ANY
         webcams = []
+
+        def _probe(index, result):
+            try:
+                cap = cv2.VideoCapture(index, backend)
+                if cap.isOpened():
+                    ret, _ = cap.read()
+                    cap.release()
+                    if ret:
+                        result['ok'] = True
+                else:
+                    cap.release()
+            except Exception:
+                pass
+
         for index in range(10):
-            cap = cv2.VideoCapture(index)
-            if not cap.isOpened():
-                cap.release()
+            result = {'ok': False}
+            t = threading.Thread(target=_probe, args=(index, result), daemon=True)
+            t.start()
+            t.join(timeout=3.0)
+            if not result['ok']:
                 break
-            ret, _ = cap.read()
-            cap.release()
-            if ret:
-                webcams.append(f"Webcam {index}")
-            else:
-                break
-        return webcams
+            webcams.append(f"Webcam {index}")
+
+        # Count FLIR cameras via Spinnaker (fast — no frame grab needed)
+        flir_count = 0
+        if FLIR_AVAILABLE:
+            try:
+                system = PySpin.System.GetInstance()
+                cam_list = system.GetCameras()
+                flir_count = cam_list.GetSize()
+                cam_list.Clear()
+                system.ReleaseInstance()
+            except Exception as e:
+                print(f"FLIR discovery error: {e}")
+
+        return {'webcams': webcams, 'flir_count': flir_count}
 
     @QtCore.pyqtSlot(object)
-    def _on_cameras_discovered(self, webcams):
-        """Main-thread slot: populate UI once webcam discovery finishes."""
-        self._all_webcams = webcams
-        self.webcam_arr_barcode = webcams
+    def _on_cameras_discovered(self, result):
+        """Main-thread slot: populate UI once discovery finishes."""
+        self._discovery_dlg.close()
+        self._all_webcams = result['webcams']
+        self._flir_count = result['flir_count']
+        self.webcam_arr_barcode = result['webcams']
 
-        self._add_label_slot(webcams)          # create the initial label camera slot
+        self._add_label_slot()
         self.setup_barcode_camera_selection()
 
         self._set_camera_controls_enabled(True)
-        if webcams:
-            flir_msg = " FLIR camera available." if FLIR_AVAILABLE else ""
-            self.statusBar().showMessage(f"Found {len(webcams)} webcam(s).{flir_msg}", 4000)
-        else:
-            self.statusBar().showMessage("No cameras detected.", 4000)
+
+        parts = []
+        if self._all_webcams:
+            parts.append(f"{len(self._all_webcams)} webcam(s)")
+        if self._flir_count:
+            parts.append(f"{self._flir_count} FLIR camera(s)")
+        msg = "Found " + " and ".join(parts) + "." if parts else "No cameras detected."
+        self.statusBar().showMessage(msg, 4000)
 
     @QtCore.pyqtSlot(tuple)
     def _on_discovery_error(self, error_tuple):
         _, value, _ = error_tuple
         print(f"Camera discovery error: {value}")
+        self._discovery_dlg.close()
         self._set_camera_controls_enabled(True)
         self.statusBar().showMessage("Camera discovery failed — see console for details.", 5000)
 
@@ -725,7 +876,7 @@ class UI(QMainWindow):
             slot = LabelCameraSlot(
                 slot_index=idx,
                 webcams=webcams,
-                flir_camera=self.flir_camera,
+                flir_count=self._flir_count,
                 frame_signal=self._label_frame_signal,
                 parent=self,
             )
@@ -756,8 +907,8 @@ class UI(QMainWindow):
 
             if slot.label_webcamView:
                 slot.label_webcamView = False
-                if slot.label_camera_type == 'FLIR' and self.flir_camera:
-                    self.flir_camera.stop_acquisition()
+                if slot.label_camera_type == 'FLIR' and slot.flir_camera:
+                    slot.flir_camera.stop_acquisition()
                 # Brief pause to let the worker loop notice the flag and exit
                 QtCore.QThread.msleep(200)
 
@@ -901,7 +1052,8 @@ class UI(QMainWindow):
             if self.barcode_webcamView and self.cap_barcode:
                 self.cap_barcode.release()
             webcam_id = int(selected_camera.split()[-1])
-            self.cap_barcode = cv2.VideoCapture(webcam_id)
+            backend = cv2.CAP_DSHOW if sys.platform == "win32" else cv2.CAP_ANY
+            self.cap_barcode = cv2.VideoCapture(webcam_id, backend)
             self.cap_barcode.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
             self.cap_barcode.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
             self.selected_barcodecam = selected_camera
@@ -936,6 +1088,12 @@ class UI(QMainWindow):
             self.log_info(f"Error with barcode camera: {e}")
 
     def update_barcode_webcam(self, cam_id, progress_callback):
+        """Worker: stream and decode barcode camera frames.
+
+        Decode runs on the full-res frame for accuracy.
+        Display pipeline resizes BGR to widget size first so cvtColor,
+        flip, putText, and QImage all operate on display-sized pixels.
+        """
         import time
         target_fps = 15
         frame_interval = 1.0 / target_fps
@@ -950,30 +1108,44 @@ class UI(QMainWindow):
 
                 if ret:
                     frame_count += 1
-                    img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    img = cv2.flip(img, -1)
 
+                    # Decode on full-res frame — accuracy matters here
                     if frame_count % decode_interval == 0:
                         decoded_data = self.decode_datamatrix(frame)
                         if decoded_data:
                             last_decoded = decoded_data
+                            QtCore.QMetaObject.invokeMethod(
+                                self.ui.lineEdit_accession, "setText",
+                                QtCore.Qt.QueuedConnection,
+                                QtCore.Q_ARG(str, last_decoded)
+                            )
+
+                    # Display pipeline — resize BGR first, then process small frame
+                    disp_w = cam_id.width()
+                    disp_h = cam_id.height()
+                    if disp_w > 0 and disp_h > 0:
+                        small = cv2.resize(frame, (disp_w, disp_h),
+                                           interpolation=cv2.INTER_LINEAR)
+                    else:
+                        small = frame
+
+                    small = cv2.flip(small, -1)
+                    rgb = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
 
                     if last_decoded:
-                        cv2.putText(img, "Decoded data: " + last_decoded, (30, 40),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (48, 56, 65), 2, cv2.LINE_AA)
-                        QtCore.QMetaObject.invokeMethod(
-                            self.ui.lineEdit_accession, "setText",
-                            QtCore.Qt.QueuedConnection,
-                            QtCore.Q_ARG(str, last_decoded)
-                        )
+                        # Font size and position scaled to the display frame
+                        cv2.putText(rgb, "Decoded: " + last_decoded, (8, 20),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.55,
+                                    (48, 56, 65), 1, cv2.LINE_AA)
 
-                    h, w, ch = img.shape
-                    live_img = QImage(img.data, w, h, ch * w, QImage.Format_RGB888)
-                    live_img_pixmap = QtGui.QPixmap.fromImage(live_img)
-                    live_img_scaled = live_img_pixmap.scaled(
-                        cam_id.width(), cam_id.height(), QtCore.Qt.KeepAspectRatio
+                    if not rgb.flags['C_CONTIGUOUS']:
+                        rgb = np.ascontiguousarray(rgb)
+
+                    h, w, ch = rgb.shape
+                    qimg = QImage(rgb.data, w, h, ch * w, QImage.Format_RGB888)
+                    self._barcode_frame_signal.emit(
+                        QtGui.QPixmap.fromImage(qimg), cam_id
                     )
-                    self._barcode_frame_signal.emit(live_img_scaled, cam_id)
 
                 elapsed = time.monotonic() - t_start
                 sleep_time = frame_interval - elapsed
@@ -995,31 +1167,51 @@ class UI(QMainWindow):
             )
 
     def decode_datamatrix(self, frame):
-        try:
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            blur = cv2.GaussianBlur(gray, (3, 3), 0)
-            _, threshold = cv2.threshold(blur, 50, 255, cv2.THRESH_BINARY_INV)
-            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
-            closing = cv2.morphologyEx(threshold, cv2.MORPH_CLOSE, kernel)
-            contours, _ = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        """Attempt to decode a datamatrix barcode from a BGR frame.
 
-            for contour in contours:
-                if cv2.contourArea(contour) > 1000:
-                    x, y, w, h = cv2.boundingRect(contour)
-                    aspect_ratio = float(w) / h
-                    if 0.8 <= aspect_ratio <= 1.2:
-                        roi = gray[y - 1:y + h + 1, x - 1:x + w + 1]
-                        if roi is not None and roi.size > 0:
-                            decoded_data = dmtx.decode(roi)
-                            for data in decoded_data:
-                                return data.data.decode('utf-8')
-                        else:
-                            break
-                    else:
-                        break
-                else:
-                    break
+        Strategy:
+          1. Resize to a fixed decode width (faster, consistent scale for dmtx)
+          2. Convert to grayscale and try dmtx.decode() directly — pylibdmtx
+             has its own internal region finder, so complex OpenCV preprocessing
+             often hurts more than it helps.
+          3. If that fails, try again on an adaptively thresholded image — this
+             helps with uneven or low-contrast lighting conditions.
+
+        The old approach used a fixed threshold + contour filter with `break`
+        statements that exited the loop on the first non-matching contour,
+        silently skipping the actual datamatrix region in most frames.
+        """
+        try:
+            # Resize to a consistent decode width — large frames slow dmtx down
+            # considerably and small details aren't needed for barcode reading.
+            decode_width = 640
+            h, w = frame.shape[:2]
+            if w != decode_width:
+                scale = decode_width / w
+                frame = cv2.resize(frame, (decode_width, int(h * scale)),
+                                   interpolation=cv2.INTER_LINEAR)
+
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            # Attempt 1: direct decode on grayscale
+            results = dmtx.decode(gray, timeout=200)
+            if results:
+                return results[0].data.decode('utf-8')
+
+            # Attempt 2: adaptive threshold — helps with uneven lighting
+            thresh = cv2.adaptiveThreshold(
+                gray, 255,
+                cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                cv2.THRESH_BINARY,
+                blockSize=21,
+                C=10
+            )
+            results = dmtx.decode(thresh, timeout=200)
+            if results:
+                return results[0].data.decode('utf-8')
+
             return None
+
         except Exception as e:
             print(f"Error decoding datamatrix: {e}")
             return None
@@ -1030,7 +1222,6 @@ class UI(QMainWindow):
         """Start or stop live view for the given slot."""
         try:
             if not slot.label_webcamView:
-                # Conflict: barcode camera streaming the same device
                 barcode_conflict = (
                     self.barcode_webcamView
                     and self.selected_barcodecam == slot.selected_camera
@@ -1043,8 +1234,8 @@ class UI(QMainWindow):
                 slot.label_webcamView = True
                 self.log_info(f"Started label camera {slot.slot_index + 1} live view.")
 
-                if slot.label_camera_type == 'FLIR' and self.flir_camera:
-                    if not self.flir_camera.start_acquisition():
+                if slot.label_camera_type == 'FLIR' and slot.flir_camera:
+                    if not slot.flir_camera.start_acquisition():
                         self.log_info("Failed to start FLIR acquisition.")
                         slot.label_webcamView = False
                         slot.start_btn.setText("Start live view")
@@ -1056,15 +1247,25 @@ class UI(QMainWindow):
                 slot.start_btn.setText("Start live view")
                 slot.label_webcamView = False
                 self.log_info(f"Ended label camera {slot.slot_index + 1} live view.")
-                if slot.label_camera_type == 'FLIR' and self.flir_camera:
-                    self.flir_camera.stop_acquisition()
+                if slot.label_camera_type == 'FLIR' and slot.flir_camera:
+                    slot.flir_camera.stop_acquisition()
 
         except Exception as e:
             print(f"Error in begin_label_camera (slot {slot.slot_index}): {e}")
             self.log_info(f"Error with label camera {slot.slot_index + 1}: {e}")
 
     def update_label_camera(self, slot, progress_callback):
-        """Worker: stream frames for a single LabelCameraSlot."""
+        """Worker: stream frames for a single LabelCameraSlot.
+
+        Pipeline order (optimised for low-powered hardware):
+          1. Grab full-res BGR frame (camera native)
+          2. Store full-res BGR on slot.frame for HQ capture
+          3. Resize BGR down to the display widget size  ← most of the saving
+          4. Flip (webcam only) on the small frame
+          5. cvtColor BGR→RGB on the small frame
+          6. Build QImage directly at display size — no .scaled() needed
+        Steps 4-6 operate on ~6-10× fewer pixels than the original pipeline.
+        """
         import time
         webcam_frame_interval = 1.0 / 15
 
@@ -1078,27 +1279,39 @@ class UI(QMainWindow):
                     if not ret:
                         time.sleep(0.05)
                         continue
-                elif slot.label_camera_type == 'FLIR' and self.flir_camera:
-                    frame = self.flir_camera.get_frame()
+                elif slot.label_camera_type == 'FLIR' and slot.flir_camera:
+                    frame = slot.flir_camera.get_frame()
                     if frame is None:
                         time.sleep(0.01)
                         continue
 
                 if frame is not None:
-                    slot.frame = frame   # store BGR for capture
+                    slot.frame = frame   # store full-res BGR for HQ capture
 
-                    img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    disp_w = slot.live_view.width()
+                    disp_h = slot.live_view.height()
+
+                    if disp_w > 0 and disp_h > 0:
+                        # Resize first — all subsequent ops work on display-sized pixels
+                        small = cv2.resize(frame, (disp_w, disp_h),
+                                           interpolation=cv2.INTER_LINEAR)
+                    else:
+                        small = frame
+
                     if slot.label_camera_type == 'Webcam':
-                        img = cv2.flip(img, -1)
+                        small = cv2.flip(small, -1)
 
-                    h, w, ch = img.shape
-                    live_img = QImage(img.data, w, h, ch * w, QImage.Format_RGB888)
-                    pixmap = QtGui.QPixmap.fromImage(live_img)
-                    scaled = pixmap.scaled(
-                        slot.live_view.width(), slot.live_view.height(),
-                        QtCore.Qt.KeepAspectRatio
+                    rgb = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
+                    # Ensure C-contiguous memory layout — required by QImage
+                    if not rgb.flags['C_CONTIGUOUS']:
+                        rgb = np.ascontiguousarray(rgb)
+
+                    h, w, ch = rgb.shape
+                    qimg = QImage(rgb.data, w, h, ch * w, QImage.Format_RGB888)
+                    # QPixmap.fromImage deep-copies so rgb can be safely overwritten next frame
+                    self._label_frame_signal.emit(
+                        QtGui.QPixmap.fromImage(qimg), slot.live_view
                     )
-                    self._label_frame_signal.emit(scaled, slot.live_view)
 
                 # Webcam throttle — FLIR paces itself via hardware frame rate cap
                 if slot.label_camera_type == 'Webcam':
@@ -1155,16 +1368,30 @@ class UI(QMainWindow):
     def _do_capture(self):
         """Capture sequentially from all label slots with progress feedback."""
         try:
-            self.ui.pushButton_capture.setEnabled(False)
             n = len(self.label_slots)
+            self.ui.pushButton_capture.setEnabled(False)
+
+            if n > 1:
+                capture_dlg = ProgressDialog(
+                    self,
+                    title="Capturing images",
+                    message=f"Saving image 1 of {n}…",
+                    maximum=n,
+                )
+                capture_dlg.show()
+                QApplication.processEvents()
+
             for i, slot in enumerate(self.label_slots):
-                # Use numbered tags when there's more than one camera,
-                # keep "_label" for single-camera setups (backward compatible).
                 tag = f"_label_{slot.slot_index + 1}" if n > 1 else "_label"
                 if n > 1:
-                    self.statusBar().showMessage(f"Capturing {i + 1} of {n}…")
-                    QApplication.processEvents()
+                    capture_dlg.set_step(i + 1, f"Saving image {i + 1} of {n}…")
                 self.capture_label_camera(slot, tag)
+
+            if n > 1:
+                capture_dlg.set_step(n, "Done!")
+                # Brief pause so the user sees 100% before the dialog closes
+                QtCore.QTimer.singleShot(600, capture_dlg.close)
+
             self.ui.pushButton_capture.setEnabled(True)
         except Exception as e:
             print(f"Error in _do_capture: {e}")
@@ -1200,7 +1427,7 @@ class UI(QMainWindow):
             self.log_info(exif_msg)
 
             csv_data = ExifManager.get_csv_data(
-                creator, taxon, accession, self.file_format, device_info
+                creator, taxon, accession, self.file_format, device_info, tag=tag
             )
             _, csv_msg = FileManager.create_or_update_csv(
                 self.output_location, taxon, csv_data
@@ -1283,7 +1510,7 @@ class UI(QMainWindow):
                 camera_settings[f'camera_{i}'] = {
                     'camera_type': slot.label_camera_type,
                     'selected_camera': slot.selected_camera,
-                    'exposure_time': slot.exposure_spinbox.value(),
+                    'exposure_ms': slot.exposure_spinbox.value(),
                     'gain_level': slot.gain_spinbox.value(),
                     'gamma': slot.gamma_spinbox.value() / 100.0,
                 }
@@ -1328,14 +1555,9 @@ class UI(QMainWindow):
             # Wait for workers to exit cleanly before releasing hardware
             self.threadpool.waitForDone(3000)
 
-            # Release per-slot webcam handles
+            # Each slot's cleanup() releases its own webcam cap and FLIRCamera
             for slot in self.label_slots:
                 slot.cleanup()
-
-            # Release shared FLIR
-            if self.flir_camera and self.flir_camera.is_initialized:
-                self.flir_camera.stop_acquisition()
-                self.flir_camera.cleanup()
 
             # Release barcode camera
             if self.cap_barcode:

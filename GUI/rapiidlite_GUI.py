@@ -111,6 +111,7 @@ class Ui_MainWindow(object):
         self.label_selectBarcodeCam.setObjectName("label_selectBarcodeCam")
         self.verticalLayout_11.addWidget(self.label_selectBarcodeCam)
         self.comboBox_selectBarcodeCam = QtWidgets.QComboBox(self.barcodeColumnWidget)
+        self.comboBox_selectBarcodeCam.setMinimumSize(QtCore.QSize(150, 0))
         self.comboBox_selectBarcodeCam.setObjectName("comboBox_selectBarcodeCam")
         self.verticalLayout_11.addWidget(self.comboBox_selectBarcodeCam)
         self.horizontalLayout.addLayout(self.verticalLayout_11)
