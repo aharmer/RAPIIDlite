@@ -199,7 +199,14 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QComboBox" name="comboBox_selectBarcodeCam"/>
+                  <widget class="QComboBox" name="comboBox_selectBarcodeCam">
+                   <property name="minimumSize">
+                    <size>
+                     <width>150</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                  </widget>
                  </item>
                 </layout>
                </item>
