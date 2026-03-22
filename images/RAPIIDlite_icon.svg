@@ -1,0 +1,42 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="#2979ff"/>
+
+  <g transform="translate(256,256)">
+
+    <!-- Outer ring -->
+    <circle cx="0" cy="0" r="148" fill="none" stroke="white" stroke-width="13" opacity="0.28"/>
+    <!-- Inner ring -->
+    <circle cx="0" cy="0" r="100" fill="none" stroke="white" stroke-width="12.5"/>
+
+    <!-- Pin body -->
+    <line x1="0" y1="-80" x2="0" y2="104" stroke="white" stroke-width="9.5" stroke-linecap="round"/>
+    <!-- Pin head -->
+    <circle cx="0" cy="-80" r="13" fill="white"/>
+
+    <!-- Upper wings -->
+    <path d="M0,-38 C-58,-100 -118,-42 -68,16 C-38,54 -7,18 0,-38Z" fill="white" opacity="0.93"/>
+    <path d="M0,-38 C58,-100 118,-42 68,16 C38,54 7,18 0,-38Z" fill="white" opacity="0.93"/>
+
+    <!-- Lower wings -->
+    <path d="M0,16 C-38,16 -58,68 -30,80 C-10,90 0,48 0,16Z" fill="white" opacity="0.72"/>
+    <path d="M0,16 C38,16 58,68 30,80 C10,90 0,48 0,16Z" fill="white" opacity="0.72"/>
+
+    <!-- Wing veins -->
+    <path d="M0,-38 C-28,-54 -50,-22 -34,0" fill="none" stroke="#2979ff" stroke-width="3.5" opacity="0.38"/>
+    <path d="M0,-38 C28,-54 50,-22 34,0" fill="none" stroke="#2979ff" stroke-width="3.5" opacity="0.38"/>
+
+    <!-- Four corner brackets -->
+    <path d="M-148,-84 L-148,-148 L-84,-148" fill="none" stroke="white" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M84,-148 L148,-148 L148,-84" fill="none" stroke="white" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M148,84 L148,148 L84,148" fill="none" stroke="white" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M-84,148 L-148,148 L-148,84" fill="none" stroke="white" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Label card -->
+    <rect x="-50" y="104" width="100" height="64" rx="11" fill="white" opacity="0.93"/>
+    <line x1="-30" y1="124" x2="30" y2="124" stroke="#2979ff" stroke-width="7" stroke-linecap="round"/>
+    <line x1="-30" y1="144" x2="18" y2="144" stroke="#2979ff" stroke-width="5" stroke-linecap="round" opacity="0.5"/>
+
+  </g>
+
+</svg>
