@@ -316,7 +316,7 @@ class ExifManager:
                     piexif.ImageIFD.DateTime: now.strftime("%Y:%m:%d %H:%M:%S").encode(),
                     piexif.ImageIFD.Make: b"RAPIIDlite",
                     piexif.ImageIFD.Model: device_info.encode(),
-                    piexif.ImageIFD.Software: b"RAPIIDlite v2.0",
+                    piexif.ImageIFD.Software: b"RAPIIDlite v3.0",
                     piexif.ImageIFD.ImageDescription: f"Specimen: {taxon} - {accession} - LABEL".encode(),
                 },
                 "Exif": {
@@ -387,6 +387,56 @@ class FileManager:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Fixed-aspect-ratio live view label
+# ──────────────────────────────────────────────────────────────────────────────
+
+class AspectRatioLabel(QLabel):
+    """QLabel that enforces a fixed aspect ratio.
+
+    Uses setFixedHeight inside resizeEvent to lock the height, with a
+    recursion guard to prevent the infinite loop that setFixedHeight
+    would otherwise cause (it triggers another resizeEvent).
+    """
+
+    def __init__(self, ratio_w=16, ratio_h=9, parent=None):
+        super().__init__(parent)
+        self._ratio_w = ratio_w
+        self._ratio_h = ratio_h
+        self._resizing = False             # recursion guard
+        self.setMinimumSize(200, 112)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.setAlignment(Qt.AlignCenter)
+        self.setStyleSheet(
+            "QLabel { border: 2px solid #2979ff; border-radius: 4px; padding: 2px; }"
+        )
+
+    def hasHeightForWidth(self):
+        return True
+
+    def heightForWidth(self, width):
+        return int(width * self._ratio_h / self._ratio_w)
+
+    def sizeHint(self):
+        w = max(self.width(), 400)
+        return QtCore.QSize(w, self.heightForWidth(w))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self._resizing:
+            return
+        new_h = self.heightForWidth(event.size().width())
+        cap = self.maximumHeight()
+        if 0 < cap < 16777215:
+            new_h = min(new_h, cap)
+        if self.height() != new_h:
+            self._resizing = True
+            try:
+                self.setFixedHeight(new_h)
+            finally:
+                self._resizing = False
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # LabelCameraSlot — one self-contained label camera widget
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -427,40 +477,35 @@ class LabelCameraSlot(QWidget):
 
     def _build_ui(self, webcams, flir_count):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 8)
+        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setSpacing(4)
+
+        # The slot itself must be Expanding so the QGridLayout stretches it
+        # to fill its cell uniformly across both columns.
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         # Header row: bold title + Remove button
         header_row = QHBoxLayout()
         self.header_label = QLabel(f"Label camera {self.slot_index + 1}")
         bold = QtGui.QFont()
+        bold.setFamilies(["Segoe UI", "system-ui", "ui-sans-serif", "sans-serif"])
         bold.setBold(True)
         bold.setPointSize(10)
         self.header_label.setFont(bold)
         self.remove_btn = QPushButton("× Remove")
-        self.remove_btn.setFixedWidth(90)
+        self.remove_btn.setFixedWidth(110)
         header_row.addWidget(self.header_label)
         header_row.addStretch()
         header_row.addWidget(self.remove_btn)
         layout.addLayout(header_row)
 
-        # Live view display
-        self.live_view = QLabel()
-        self.live_view.setMinimumSize(800, 600)
-        self.live_view.setStyleSheet(
-            "QLabel { border: 2px solid #8BC34A; border-radius: 4px; padding: 2px; }"
-        )
-        self.live_view.setAlignment(Qt.AlignCenter)
-        self.live_view.setScaledContents(True)
-        layout.addWidget(self.live_view)
-
-        # Controls row
+        # Controls row — above the live view so they're always visible
         controls = QHBoxLayout()
 
         # Start/stop button
         btn_col = QVBoxLayout()
-        btn_col.addWidget(QLabel("Label camera"))
         self.start_btn = QPushButton("Start live view")
-        self.start_btn.setMinimumWidth(153)
+        self.start_btn.setMinimumWidth(130)
         self.start_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         btn_col.addWidget(self.start_btn)
         controls.addLayout(btn_col)
@@ -480,10 +525,10 @@ class LabelCameraSlot(QWidget):
         exp_col = QVBoxLayout()
         exp_col.addWidget(QLabel("Exposure (ms)"))
         self.exposure_spinbox = QDoubleSpinBox()
-        self.exposure_spinbox.setRange(0.1, 1000.0)   # 100 µs – 1,000,000 µs
+        self.exposure_spinbox.setRange(0.1, 1000.0)
         self.exposure_spinbox.setDecimals(1)
         self.exposure_spinbox.setSingleStep(1.0)
-        self.exposure_spinbox.setValue(50.0)            # default 50 ms = 50,000 µs
+        self.exposure_spinbox.setValue(50.0)
         self.exposure_spinbox.setSuffix(" ms")
         exp_col.addWidget(self.exposure_spinbox)
         controls.addLayout(exp_col)
@@ -509,21 +554,18 @@ class LabelCameraSlot(QWidget):
         controls.addStretch()
         layout.addLayout(controls)
 
-        # Visual separator between slots
-        sep = QFrame()
-        sep.setFrameShape(QFrame.HLine)
-        sep.setFrameShadow(QFrame.Sunken)
-        layout.addWidget(sep)
+        # Live view — sits below controls, expands to fill remaining cell space
+        self.live_view = AspectRatioLabel(ratio_w=16, ratio_h=9)
+        layout.addWidget(self.live_view, stretch=1)
+
+        # No separator — the tile border provides enough visual separation
+        # in the grid and a horizontal rule between cells adds clutter.
 
         # FLIR controls start disabled — enabled when FLIR is selected
         self._set_flir_controls_enabled(False)
 
         # Wire up signals
         self.cam_combo.currentTextChanged.connect(self._on_camera_changed)
-        # Use lambda to discard the emitted int value — QTimer.start() takes an
-        # optional interval argument, so connecting valueChanged(int) directly
-        # would call start(new_spinbox_value), using the spinbox value as the
-        # timer interval in ms rather than the pre-set 400ms debounce interval.
         self.exposure_spinbox.valueChanged.connect(lambda _: self._settings_timer.start())
         self.gain_spinbox.valueChanged.connect(lambda _: self._settings_timer.start())
         self.gamma_spinbox.valueChanged.connect(lambda _: self._settings_timer.start())
@@ -731,13 +773,23 @@ class UI(QMainWindow):
     def __init__(self):
         super(UI, self).__init__()
         try:
-            icon_path = Path.cwd().joinpath("images", "RAPIIDlite_icon.png")
-            if icon_path.exists():
-                self.setWindowIcon(QtGui.QIcon(str(icon_path)))
-
             self.exit_program = False
             self.ui = Ui_MainWindow()
             self.ui.setupUi(self)
+
+            # Load app icon — taskbar, window title bar, and header bar
+            icon_path = Path.cwd().joinpath("images", "RAPIIDlite_icon.png")
+            if icon_path.exists():
+                self.setWindowIcon(QtGui.QIcon(str(icon_path)))
+                icon_pixmap = QtGui.QPixmap(str(icon_path)).scaled(
+                    44, 44, Qt.KeepAspectRatio, Qt.SmoothTransformation
+                )
+                self.ui.headerIconLabel.setPixmap(icon_pixmap)
+            else:
+                # Fallback: blue rounded square matching brand colour
+                self.ui.headerIconLabel.setStyleSheet(
+                    "background-color: #2979ff; border-radius: 10px;"
+                )
 
             self.threadpool = QtCore.QThreadPool()
             print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
@@ -866,8 +918,48 @@ class UI(QMainWindow):
 
     # ── Slot management ────────────────────────────────────────────────────────
 
+    def _get_label_container(self):
+        """Return the permanent QGridLayout installed in setup_ui_connections."""
+        return self._label_grid
+
+    def _retile_grid(self):
+        """Re-position all slots in the grid.
+
+        1 slot  → spans both columns, live_view capped at 450px so controls
+                   remain visible without scrolling on any typical screen.
+        2+ slots → 2-column grid, live_view uncapped (naturally sized by 16:9).
+
+        A stretch row at the bottom absorbs spare vertical space so slots stay
+        compact rather than being spread across the full panel height.
+        """
+        grid = self._get_label_container()
+
+        for slot in self.label_slots:
+            grid.removeWidget(slot)
+        for r in range(grid.rowCount()):
+            grid.setRowStretch(r, 0)
+
+        n = len(self.label_slots)
+        if n == 1:
+            slot = self.label_slots[0]
+            slot.live_view.setMaximumHeight(16777215)
+            grid.addWidget(slot, 0, 0, 1, 2)
+            grid.setRowStretch(0, 0)
+            grid.setRowStretch(1, 1)
+        else:
+            n_rows = (n + 1) // 2
+            for i, slot in enumerate(self.label_slots):
+                slot.live_view.setMaximumHeight(16777215)
+                slot.setMaximumWidth(16777215)
+                grid.addWidget(slot, i // 2, i % 2)
+                grid.setRowStretch(i // 2, 0)
+            grid.setRowStretch(n_rows, 1)
+
+        self._update_single_slot_width()
+        QtCore.QTimer.singleShot(100, self._update_single_slot_width)
+
     def _add_label_slot(self, webcams=None):
-        """Create a new LabelCameraSlot and insert it into the scroll area."""
+        """Create a new LabelCameraSlot and tile it into the grid."""
         try:
             if webcams is None:
                 webcams = self._all_webcams
@@ -880,19 +972,14 @@ class UI(QMainWindow):
                 frame_signal=self._label_frame_signal,
                 parent=self,
             )
-
-            # Connect slot buttons to UI methods
             slot.start_btn.pressed.connect(lambda s=slot: self.begin_label_camera(s))
             slot.remove_btn.pressed.connect(lambda s=slot: self._remove_label_slot(s))
 
-            # Insert into the scroll area's layout
-            container_layout = self.ui.labelCameraScrollArea.widget().layout()
-            container_layout.addWidget(slot)
-
             self.label_slots.append(slot)
+            self._retile_grid()
             self._update_remove_buttons()
 
-            if idx > 0:   # don't log for the initial slot created at startup
+            if idx > 0:
                 self.log_info(f"Added label camera {idx + 1}.")
 
         except Exception as e:
@@ -900,31 +987,28 @@ class UI(QMainWindow):
             self.log_info(f"Error adding label camera: {e}")
 
     def _remove_label_slot(self, slot):
-        """Stop, remove, and re-index a label camera slot."""
+        """Stop, remove, and re-tile the label camera grid."""
         try:
             if len(self.label_slots) <= 1:
-                return  # always keep at least one slot
+                return
 
             if slot.label_webcamView:
                 slot.label_webcamView = False
                 if slot.label_camera_type == 'FLIR' and slot.flir_camera:
                     slot.flir_camera.stop_acquisition()
-                # Brief pause to let the worker loop notice the flag and exit
                 QtCore.QThread.msleep(200)
 
             slot.cleanup()
-
-            container_layout = self.ui.labelCameraScrollArea.widget().layout()
-            container_layout.removeWidget(slot)
             slot.setParent(None)
             slot.deleteLater()
             self.label_slots.remove(slot)
 
-            # Re-number remaining slots so headers stay consistent
+            # Re-number remaining slots
             for i, s in enumerate(self.label_slots):
                 s.slot_index = i
                 s.header_label.setText(f"Label camera {i + 1}")
 
+            self._retile_grid()
             self._update_remove_buttons()
             self.log_info(f"Removed label camera. {len(self.label_slots)} remaining.")
 
@@ -937,6 +1021,19 @@ class UI(QMainWindow):
         only_one = len(self.label_slots) == 1
         for slot in self.label_slots:
             slot.remove_btn.setEnabled(not only_one)
+
+    def _update_single_slot_width(self):
+        """Cap the single slot's width to 80% of the window width so the
+        live view is proportionally sized rather than spanning the full panel."""
+        if len(self.label_slots) != 1:
+            return
+        target = max(400, int(self.width() * 0.80))
+        self.label_slots[0].setMaximumWidth(target)
+
+    def resizeEvent(self, event):
+        """Keep the single-camera slot at 80% window width on resize."""
+        super().resizeEvent(event)
+        self._update_single_slot_width()
 
     # ── UI setup ───────────────────────────────────────────────────────────────
 
@@ -967,6 +1064,19 @@ class UI(QMainWindow):
             self._capture_flash_timer.setSingleShot(True)
             self._capture_flash_timer.setInterval(1500)
             self._capture_flash_timer.timeout.connect(self._clear_capture_flash)
+
+            # Install the QGridLayout by replacing the scroll area's widget
+            # entirely with a fresh one. This avoids any conflict with the
+            # placeholder layout defined in the .ui file — Qt won't allow
+            # setLayout() on a widget that already has one.
+            container = QWidget()
+            container.setStyleSheet("background-color: #f1f5f9;")
+            self._label_grid = QGridLayout(container)
+            self._label_grid.setContentsMargins(0, 0, 0, 0)
+            self._label_grid.setSpacing(6)
+            self._label_grid.setColumnStretch(0, 1)
+            self._label_grid.setColumnStretch(1, 1)
+            self.ui.labelCameraScrollArea.setWidget(container)
 
         except Exception as e:
             print(f"Error setting up UI connections: {e}")
@@ -1577,9 +1687,18 @@ class UI(QMainWindow):
 if __name__ == "__main__":
     try:
         app = QApplication(sys.argv)
+
+        # Match the Tailwind font-sans stack used by the Chrysalis web app.
+        # QFont resolves to the first family actually installed on the system:
+        # Segoe UI on Windows, SF Pro on macOS (via system-ui), DejaVu/Ubuntu on Linux.
+        app_font = QtGui.QFont()
+        app_font.setFamilies(["Segoe UI", "system-ui", "ui-sans-serif", "sans-serif"])
+        app_font.setPointSize(10)
+        app.setFont(app_font)
+
         UIWindow = UI()
         if QT_MATERIAL_AVAILABLE:
-            apply_stylesheet(app, theme='dark_lightgreen.xml')
+            apply_stylesheet(app, theme='light_blue.xml')
         else:
             print("Using default Qt theme")
         sys.exit(app.exec_())
