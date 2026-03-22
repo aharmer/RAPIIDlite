@@ -328,13 +328,6 @@
                 <item>
                  <layout class="QVBoxLayout" name="verticalLayout_11">
                   <item>
-                   <widget class="QLabel" name="label_selectBarcodeCam">
-                    <property name="text">
-                     <string>Select camera</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
                    <widget class="QComboBox" name="comboBox_selectBarcodeCam">
                     <property name="minimumSize">
                      <size>
@@ -413,7 +406,7 @@
                 <property name="sizeHint" stdset="0">
                  <size>
                   <width>20</width>
-                  <height>12</height>
+                  <height>5</height>
                  </size>
                 </property>
                </spacer>
@@ -441,7 +434,7 @@
                 <property name="sizeHint" stdset="0">
                  <size>
                   <width>20</width>
-                  <height>15</height>
+                  <height>25</height>
                  </size>
                 </property>
                </spacer>
@@ -459,22 +452,6 @@
                  <string>Save config file...</string>
                 </property>
                </widget>
-              </item>
-              <item>
-               <spacer name="verticalSpacer_4">
-                <property name="orientation">
-                 <enum>Qt::Vertical</enum>
-                </property>
-                <property name="sizeType">
-                 <enum>QSizePolicy::Fixed</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>20</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
               </item>
               <item>
                <widget class="QPushButton" name="pushButton_outputFolder">
@@ -510,10 +487,13 @@
                 <property name="sizeHint" stdset="0">
                  <size>
                   <width>20</width>
-                  <height>5</height>
+                  <height>25</height>
                  </size>
                 </property>
                </spacer>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="lineEdit_creator"/>
               </item>
               <item>
                <widget class="QLabel" name="label_creator">
@@ -530,7 +510,24 @@
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="lineEdit_creator"/>
+               <widget class="QLineEdit" name="lineEdit_institution"/>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_institution">
+                <property name="font">
+                 <font>
+                  <pointsize>10</pointsize>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Institution</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="lineEdit_taxon"/>
               </item>
               <item>
                <widget class="QLabel" name="label_taxon">
@@ -547,7 +544,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="lineEdit_taxon"/>
+               <widget class="QLineEdit" name="lineEdit_accession"/>
               </item>
               <item>
                <widget class="QLabel" name="label_accession">
@@ -571,9 +568,6 @@
                  <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
                 </property>
                </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="lineEdit_accession"/>
               </item>
               <item>
                <spacer name="verticalSpacer_5">

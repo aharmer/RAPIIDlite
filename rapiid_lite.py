@@ -304,14 +304,15 @@ class FLIRCamera:
 
 class ExifManager:
     @staticmethod
-    def add_exif_to_image(image_path, creator, taxon, accession, device_info):
+    def add_exif_to_image(image_path, creator, taxon, accession, device_info, institution=""):
         if not EXIF_AVAILABLE:
             return False, "EXIF embedding skipped (PIL/piexif not installed)"
         try:
             now = datetime.datetime.now()
+            rights = institution if institution else "Manaaki Whenua Landcare Research"
             exif_dict = {
                 "0th": {
-                    piexif.ImageIFD.Copyright: f"CC-BY 4.0 {now.year} Manaaki Whenua Landcare Research".encode(),
+                    piexif.ImageIFD.Copyright: f"CC-BY 4.0 {now.year} {rights}".encode(),
                     piexif.ImageIFD.Artist: creator.encode(),
                     piexif.ImageIFD.DateTime: now.strftime("%Y:%m:%d %H:%M:%S").encode(),
                     piexif.ImageIFD.Make: b"RAPIIDlite",
@@ -337,15 +338,16 @@ class ExifManager:
             return False, f"Failed to add EXIF data: {e}"
 
     @staticmethod
-    def get_csv_data(creator, taxon, accession, file_format, device_info="", tag="_label"):
+    def get_csv_data(creator, taxon, accession, file_format, device_info="", tag="_label", institution=""):
         now = datetime.datetime.now()
+        rights = institution if institution else "Manaaki Whenua Landcare Research"
         return {
             'image_filename': f"{accession}{tag}{file_format}",
             'accession_number': accession,
             'taxon_name': taxon,
             'image_format': file_format.replace('.', '').upper(),
             'copyright_type': f"CC-BY 4.0 {now.year}",
-            'rights_owner': "Manaaki Whenua Landcare Research",
+            'rights_owner': rights,
             'creator': creator,
             'date_captured': now.strftime("%Y-%m-%d %H:%M:%S"),
             'capture_device': device_info or "RAPIIDlite",
@@ -504,6 +506,7 @@ class LabelCameraSlot(QWidget):
 
         # Start/stop button
         btn_col = QVBoxLayout()
+        btn_col.addWidget(QLabel(" "))
         self.start_btn = QPushButton("Start live view")
         self.start_btn.setMinimumWidth(130)
         self.start_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -512,7 +515,7 @@ class LabelCameraSlot(QWidget):
 
         # Camera selection dropdown — webcams + numbered FLIR entries
         cam_col = QVBoxLayout()
-        cam_col.addWidget(QLabel("Select camera"))
+        cam_col.addWidget(QLabel(" "))
         self.cam_combo = QComboBox()
         for name in webcams:
             self.cam_combo.addItem(name)
@@ -1514,6 +1517,7 @@ class UI(QMainWindow):
             accession = self.ui.lineEdit_accession.text()
             taxon = self.ui.lineEdit_taxon.text()
             creator = self.ui.lineEdit_creator.text()
+            institution = self.ui.lineEdit_institution.text()
 
             file_name = str(
                 self.output_location_folder.joinpath(accession + tag + self.file_format)
@@ -1532,12 +1536,13 @@ class UI(QMainWindow):
             device_info = slot.get_device_info()
 
             _, exif_msg = ExifManager.add_exif_to_image(
-                file_name, creator, taxon, accession, device_info
+                file_name, creator, taxon, accession, device_info, institution
             )
             self.log_info(exif_msg)
 
             csv_data = ExifManager.get_csv_data(
-                creator, taxon, accession, self.file_format, device_info, tag=tag
+                creator, taxon, accession, self.file_format, device_info,
+                tag=tag, institution=institution
             )
             _, csv_msg = FileManager.create_or_update_csv(
                 self.output_location, taxon, csv_data
@@ -1596,6 +1601,7 @@ class UI(QMainWindow):
             if config_file:
                 self.config = ymlRW.read_config_file(config_file)
                 self.ui.lineEdit_creator.setText(self.config["general"]["creator"])
+                self.ui.lineEdit_institution.setText(self.config["general"].get("institution", ""))
                 self.ui.lineEdit_taxon.setText(self.config["general"]["taxon_name"])
                 self.loadedConfig = True
                 self.log_info("Loaded config file successfully!")
@@ -1628,6 +1634,7 @@ class UI(QMainWindow):
             config = {
                 'general': {
                     'creator': self.ui.lineEdit_creator.text(),
+                    'institution': self.ui.lineEdit_institution.text(),
                     'taxon_name': self.ui.lineEdit_taxon.text(),
                     'output_folder': self.output_location,
                     'num_label_cameras': len(self.label_slots),
@@ -1644,6 +1651,7 @@ class UI(QMainWindow):
         return {
             'general': {
                 'creator': '',
+                'institution': '',
                 'taxon_name': 'untitled_project',
             }
         }
