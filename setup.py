@@ -20,7 +20,7 @@ if sys.platform == "win32":
     shortcut_dir="DesktopFolder"
 setup(
     name = 'RAPIIDlite',
-    version = '3.0',
+    version = '3.1',
     description = 'RAked Pinned Insect Imaging Device (Lite)',
     author = 'A.M.T. Harmer',
     author_email = 'harmera@landcareresearch.co.nz',

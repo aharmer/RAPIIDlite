@@ -1,4 +1,4 @@
-# RAPIIDlite v3.0
+# RAPIIDlite v3.1
 
 **Transforming specimen labels to digital data**
 

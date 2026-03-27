@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>RAPIIDlite v3.0</string>
+   <string>RAPIIDlite v3.1</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="styleSheet">
