@@ -466,7 +466,8 @@ class LabelCameraSlot(QWidget):
         self.label_camera_type = 'Webcam'
         self.cap = None
         self.frame = None
-        self.selected_camera = webcams[0] if webcams else ''
+        self.selected_camera = ''   # empty until user makes a selection
+        self._taken_cameras = set() # cameras currently claimed by other slots
 
         self._settings_timer = QtCore.QTimer()
         self._settings_timer.setSingleShot(True)
@@ -517,6 +518,12 @@ class LabelCameraSlot(QWidget):
         cam_col = QVBoxLayout()
         cam_col.addWidget(QLabel(" "))
         self.cam_combo = QComboBox()
+        # Placeholder — selectable (so users can return to it to deselect),
+        # styled italic and muted so it reads as a prompt rather than a camera.
+        self.cam_combo.addItem("— Select camera —")
+        _ph = self.cam_combo.model().item(0)
+        _phf = _ph.font(); _phf.setItalic(True); _ph.setFont(_phf)
+        _ph.setForeground(QtGui.QColor(150, 150, 150))
         for name in webcams:
             self.cam_combo.addItem(name)
         for i in range(flir_count):
@@ -573,9 +580,8 @@ class LabelCameraSlot(QWidget):
         self.gain_spinbox.valueChanged.connect(lambda _: self._settings_timer.start())
         self.gamma_spinbox.valueChanged.connect(lambda _: self._settings_timer.start())
 
-        # Open the initial camera handle
-        if webcams:
-            self._open_cap(webcams[0])
+        # No camera is opened until the user makes a selection — the placeholder
+        # prevents any camera handle being claimed before the user chooses.
 
     # ── Internal helpers ───────────────────────────────────────────────────────
 
@@ -605,13 +611,32 @@ class LabelCameraSlot(QWidget):
     def _on_camera_changed(self, selected):
         """Respond to the user picking a different camera in the dropdown."""
         try:
+            # If the selected camera is taken by another slot/barcode, revert
+            # immediately without opening any hardware handle.
+            if selected and selected != "— Select camera —" and selected in self._taken_cameras:
+                self.cam_combo.blockSignals(True)
+                # Revert to previous selection or placeholder
+                prev = self.selected_camera if self.selected_camera else "— Select camera —"
+                idx = self.cam_combo.findText(prev)
+                if idx >= 0:
+                    self.cam_combo.setCurrentIndex(idx)
+                self.cam_combo.blockSignals(False)
+                return
             # Clean up existing FLIR instance if switching away from it
             if self.flir_camera and self.flir_camera.is_initialized:
                 self.flir_camera.stop_acquisition()
                 self.flir_camera.cleanup()
                 self.flir_camera = None
 
-            if selected.startswith("Webcam"):
+            if selected == "— Select camera —" or not selected:
+                self.selected_camera = ''
+                self.label_camera_type = 'Webcam'
+                self._set_flir_controls_enabled(False)
+                if self.cap:
+                    self.cap.release()
+                    self.cap = None
+
+            elif selected.startswith("Webcam"):
                 self.label_camera_type = 'Webcam'
                 self._set_flir_controls_enabled(False)
                 self.selected_camera = selected
@@ -620,7 +645,6 @@ class LabelCameraSlot(QWidget):
             elif selected.startswith("FLIR Camera") and FLIR_AVAILABLE:
                 self.label_camera_type = 'FLIR'
                 self._set_flir_controls_enabled(True)
-                # Parse index from "FLIR Camera N"
                 flir_index = int(selected.split()[-1])
                 self.flir_camera = FLIRCamera(camera_index=flir_index)
                 if self.flir_camera.initialize():
@@ -629,6 +653,11 @@ class LabelCameraSlot(QWidget):
                 else:
                     print(f"Slot {self.slot_index}: FLIR Camera {flir_index} failed to initialize")
                     self.flir_camera = None
+                    self.selected_camera = ''
+
+            # Notify the parent UI to refresh availability across all slots
+            if self.parent() and hasattr(self.parent(), '_refresh_camera_availability'):
+                self.parent()._refresh_camera_availability()
 
         except Exception as e:
             print(f"Slot {self.slot_index}: error changing camera: {e}")
@@ -656,6 +685,23 @@ class LabelCameraSlot(QWidget):
             print(f"Slot {self.slot_index}: error applying settings: {e}")
 
     # ── Public interface ───────────────────────────────────────────────────────
+
+    def sync_camera_availability(self, taken_cameras):
+        """Visually mark taken cameras and store the taken set for the
+        signal handler to enforce when the user makes a selection."""
+        self._taken_cameras = taken_cameras
+        model = self.cam_combo.model()
+        for i in range(self.cam_combo.count()):
+            item = model.item(i)
+            name = item.text()
+            if name == "— Select camera —":
+                continue
+            if name in taken_cameras:
+                item.setForeground(QtGui.QColor(150, 150, 150))
+                font = item.font(); font.setItalic(True); item.setFont(font)
+            else:
+                item.setForeground(QtGui.QColor())   # reset to theme default
+                font = item.font(); font.setItalic(False); item.setFont(font)
 
     def get_frame_for_capture(self):
         """Return the best available frame for saving to disk."""
@@ -805,7 +851,8 @@ class UI(QMainWindow):
 
             # Barcode camera
             self.barcode_webcamView = False
-            self.selected_barcodecam = 'Webcam 1'
+            self.selected_barcodecam = ''
+            self._barcode_taken_cameras = set()  # label cameras taken, for barcode revert guard
             self.webcam_arr_barcode = []
             self.cap_barcode = None
 
@@ -981,6 +1028,7 @@ class UI(QMainWindow):
             self.label_slots.append(slot)
             self._retile_grid()
             self._update_remove_buttons()
+            self._refresh_camera_availability()
 
             if idx > 0:
                 self.log_info(f"Added label camera {idx + 1}.")
@@ -1013,6 +1061,7 @@ class UI(QMainWindow):
 
             self._retile_grid()
             self._update_remove_buttons()
+            self._refresh_camera_availability()
             self.log_info(f"Removed label camera. {len(self.label_slots)} remaining.")
 
         except Exception as e:
@@ -1024,6 +1073,38 @@ class UI(QMainWindow):
         only_one = len(self.label_slots) == 1
         for slot in self.label_slots:
             slot.remove_btn.setEnabled(not only_one)
+
+    def _refresh_camera_availability(self):
+        """Update all dropdowns to reflect which cameras are taken.
+
+        Taken cameras are shown in grey/italic and — critically — the
+        signal handlers revert the selection if a taken item is picked,
+        since qt_material's delegate ignores item flags for blocking clicks.
+        """
+        label_selected = {s.selected_camera for s in self.label_slots if s.selected_camera}
+        barcode_selected = self.selected_barcodecam if self.selected_barcodecam else ''
+        all_taken = label_selected | ({barcode_selected} if barcode_selected else set())
+
+        # Update each label slot's taken set and visual state
+        for slot in self.label_slots:
+            others = all_taken - ({slot.selected_camera} if slot.selected_camera else set())
+            slot.sync_camera_availability(others)
+
+        # Update barcode's taken set and visual state
+        barcode_others = all_taken - ({barcode_selected} if barcode_selected else set())
+        self._barcode_taken_cameras = barcode_others
+        model = self.ui.comboBox_selectBarcodeCam.model()
+        for i in range(self.ui.comboBox_selectBarcodeCam.count()):
+            item = model.item(i)
+            name = item.text()
+            if name == "— Select camera —":
+                continue
+            if name in barcode_others:
+                item.setForeground(QtGui.QColor(150, 150, 150))
+                font = item.font(); font.setItalic(True); item.setFont(font)
+            else:
+                item.setForeground(QtGui.QColor())
+                font = item.font(); font.setItalic(False); item.setFont(font)
 
     def _update_single_slot_width(self):
         """Cap the single slot's width to 80% of the window width so the
@@ -1096,6 +1177,12 @@ class UI(QMainWindow):
 
     def setup_barcode_camera_selection(self):
         try:
+            # Placeholder — selectable so users can return to it to deselect
+            self.ui.comboBox_selectBarcodeCam.addItem("— Select camera —")
+            _ph = self.ui.comboBox_selectBarcodeCam.model().item(0)
+            _phf = _ph.font(); _phf.setItalic(True); _ph.setFont(_phf)
+            _ph.setForeground(QtGui.QColor(150, 150, 150))
+
             for name in self.webcam_arr_barcode:
                 self.ui.comboBox_selectBarcodeCam.addItem(name)
 
@@ -1103,12 +1190,13 @@ class UI(QMainWindow):
                 self.select_barcode_webcam
             )
 
+            # Default to second webcam if available, else first
             if len(self.webcam_arr_barcode) > 1:
-                self.ui.comboBox_selectBarcodeCam.setCurrentIndex(1)
+                self.ui.comboBox_selectBarcodeCam.setCurrentIndex(2)  # offset by placeholder
             elif len(self.webcam_arr_barcode) > 0:
-                self.ui.comboBox_selectBarcodeCam.setCurrentIndex(0)
+                self.ui.comboBox_selectBarcodeCam.setCurrentIndex(1)
 
-            if self.ui.comboBox_selectBarcodeCam.count() > 0:
+            if self.ui.comboBox_selectBarcodeCam.count() > 1:
                 self.select_barcode_webcam()
 
         except Exception as e:
@@ -1162,6 +1250,25 @@ class UI(QMainWindow):
     def select_barcode_webcam(self):
         try:
             selected_camera = self.ui.comboBox_selectBarcodeCam.currentText()
+
+            # Revert if this camera is already taken by a label slot
+            if (selected_camera and selected_camera != "— Select camera —"
+                    and selected_camera in self._barcode_taken_cameras):
+                self.ui.comboBox_selectBarcodeCam.blockSignals(True)
+                prev = self.selected_barcodecam if self.selected_barcodecam else "— Select camera —"
+                idx = self.ui.comboBox_selectBarcodeCam.findText(prev)
+                if idx >= 0:
+                    self.ui.comboBox_selectBarcodeCam.setCurrentIndex(idx)
+                self.ui.comboBox_selectBarcodeCam.blockSignals(False)
+                return
+
+            if selected_camera == "— Select camera —" or not selected_camera:
+                self.selected_barcodecam = ''
+                if self.cap_barcode:
+                    self.cap_barcode.release()
+                    self.cap_barcode = None
+                self._refresh_camera_availability()
+                return
             if self.barcode_webcamView and self.cap_barcode:
                 self.cap_barcode.release()
             webcam_id = int(selected_camera.split()[-1])
@@ -1171,6 +1278,7 @@ class UI(QMainWindow):
             self.cap_barcode.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
             self.selected_barcodecam = selected_camera
             self.log_info("Selected " + selected_camera)
+            self._refresh_camera_availability()
         except Exception as e:
             print(f"Error selecting barcode webcam: {e}")
             self.log_info(f"Error selecting barcode camera: {e}")
@@ -1179,7 +1287,9 @@ class UI(QMainWindow):
         try:
             selected_camera = self.ui.comboBox_selectBarcodeCam.currentText()
             if not self.barcode_webcamView:
-                # Conflict: any label slot currently streaming the same device
+                if selected_camera == "— Select camera —" or not selected_camera:
+                    self.log_info("Barcode camera: please select a camera first.")
+                    return
                 label_conflict = any(
                     s.label_webcamView and s.selected_camera == selected_camera
                     for s in self.label_slots
@@ -1188,6 +1298,7 @@ class UI(QMainWindow):
                     button_id.setText("Stop live view")
                     self.barcode_webcamView = True
                     self.log_info("Started barcode camera live view.")
+                    self._refresh_camera_availability()
                     worker = Worker(self.update_barcode_webcam, cam_id)
                     self.threadpool.start(worker)
                 else:
@@ -1196,6 +1307,7 @@ class UI(QMainWindow):
                 button_id.setText("Start live view")
                 self.log_info("Ended barcode camera live view.")
                 self.barcode_webcamView = False
+                self._refresh_camera_availability()
         except Exception as e:
             print(f"Error in begin_barcode_webcam: {e}")
             self.log_info(f"Error with barcode camera: {e}")
@@ -1335,6 +1447,10 @@ class UI(QMainWindow):
         """Start or stop live view for the given slot."""
         try:
             if not slot.label_webcamView:
+                if not slot.selected_camera:
+                    self.log_info(f"Label camera {slot.slot_index + 1}: please select a camera first.")
+                    return
+
                 barcode_conflict = (
                     self.barcode_webcamView
                     and self.selected_barcodecam == slot.selected_camera
@@ -1346,6 +1462,7 @@ class UI(QMainWindow):
                 slot.start_btn.setText("Stop live view")
                 slot.label_webcamView = True
                 self.log_info(f"Started label camera {slot.slot_index + 1} live view.")
+                self._refresh_camera_availability()
 
                 if slot.label_camera_type == 'FLIR' and slot.flir_camera:
                     if not slot.flir_camera.start_acquisition():
@@ -1360,6 +1477,7 @@ class UI(QMainWindow):
                 slot.start_btn.setText("Start live view")
                 slot.label_webcamView = False
                 self.log_info(f"Ended label camera {slot.slot_index + 1} live view.")
+                self._refresh_camera_availability()
                 if slot.label_camera_type == 'FLIR' and slot.flir_camera:
                     slot.flir_camera.stop_acquisition()
 
