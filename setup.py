@@ -39,15 +39,32 @@ setup(
     description='RAked Pinned Insect Imaging Device (Lite)',
     author='A.M.T. Harmer',
     author_email='harmera@landcareresearch.co.nz',
-    options={'build_exe': {
-        'includes': includes,
-        'excludes': excludes,
-        # 'packages': packages,
-        'include_files': includefiles}
+    options = {
+        'build_exe': {
+            'includes': includes,
+            'excludes': excludes,
+            'include_files': includefiles
         },
-    executables=[Executable('rapiid_lite.py',
-        base=base,
-        icon='images/RAPIIDlite_icon.ico',
-        shortcut_name=shortcut_name,
-        shortcut_dir=shortcut_dir)]
+        'bdist_msi': {
+            'add_to_path': False,
+            'initial_target_dir': r'[ProgramFilesFolder]\RAPIIDlite',
+            'install_icon': 'images/RAPIIDlite_icon.ico',
+        }
+    },
+    executables = [
+        Executable(
+            'rapiid_lite.py',
+            base=base,
+            icon='images/RAPIIDlite_icon.ico',
+            shortcut_name='RAPIIDlite',
+            shortcut_dir='DesktopFolder'
+        ),
+        Executable(
+            'rapiid_lite.py',
+            base=base,
+            icon='images/RAPIIDlite_icon.ico',
+            shortcut_name='RAPIIDlite',
+            shortcut_dir='ProgramMenuFolder'
+        ),
+    ]
 )
