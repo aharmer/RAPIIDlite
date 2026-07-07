@@ -7,6 +7,8 @@ import sys
 import pylibdmtx
 from cx_Freeze import setup, Executable
 
+icon_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images', 'RAPIIDlite_icon.ico')
+
 includes = []
 
 # Explicitly include the native libdmtx DLLs bundled with pylibdmtx.
@@ -26,12 +28,8 @@ includefiles = ['GUI/', 'images/', 'scripts/', 'config.yaml'] + dmtx_dlls
 excludes = ['cx_Freeze', 'setuptools', 'tkinter']
 
 base = None
-shortcut_name = None
-shortcut_dir = None
 if sys.platform == "win32":
     base = "Win32GUI"
-    shortcut_name = 'RAPIIDlite'
-    shortcut_dir = "DesktopFolder"
 
 setup(
     name='RAPIIDlite',
@@ -39,7 +37,7 @@ setup(
     description='RAked Pinned Insect Imaging Device (Lite)',
     author='A.M.T. Harmer',
     author_email='harmera@landcareresearch.co.nz',
-    options = {
+    options={
         'build_exe': {
             'includes': includes,
             'excludes': excludes,
@@ -51,18 +49,18 @@ setup(
             'install_icon': 'images/RAPIIDlite_icon.ico',
         }
     },
-    executables = [
+    executables=[
         Executable(
             'rapiid_lite.py',
             base=base,
-            icon='images/RAPIIDlite_icon.ico',
+            icon=icon_file,
             shortcut_name='RAPIIDlite',
             shortcut_dir='DesktopFolder'
         ),
         Executable(
             'rapiid_lite.py',
             base=base,
-            icon='images/RAPIIDlite_icon.ico',
+            icon=icon_file,
             shortcut_name='RAPIIDlite',
             shortcut_dir='ProgramMenuFolder'
         ),

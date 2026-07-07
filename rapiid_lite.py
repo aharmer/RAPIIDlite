@@ -827,10 +827,25 @@ class UI(QMainWindow):
             self.ui.setupUi(self)
 
             # Load app icon — taskbar, window title bar, and header bar
-            icon_path = Path.cwd().joinpath("images", "RAPIIDlite_icon.png")
-            if icon_path.exists():
-                self.setWindowIcon(QtGui.QIcon(str(icon_path)))
-                icon_pixmap = QtGui.QPixmap(str(icon_path)).scaled(
+            if getattr(sys, 'frozen', False):
+                app_dir = Path(sys.executable).parent
+            else:
+                app_dir = Path(__file__).parent
+
+            ico_path = app_dir / "images" / "RAPIIDlite_icon.ico"
+            png_path = app_dir / "images" / "RAPIIDlite_icon.png"
+
+            # Window/taskbar icon — .ico preferred (Windows picks the right
+            # frame size itself), .png fallback
+            win_icon = ico_path if ico_path.exists() else png_path
+            if win_icon.exists():
+                self.setWindowIcon(QtGui.QIcon(str(win_icon)))
+
+            # Header bar pixmap — always from the high-res PNG so the 44px
+            # scale-down stays crisp (QPixmap grabs a single small frame from
+            # an .ico, which looks blurry when upscaled)
+            if png_path.exists():
+                icon_pixmap = QtGui.QPixmap(str(png_path)).scaled(
                     44, 44, Qt.KeepAspectRatio, Qt.SmoothTransformation
                 )
                 self.ui.headerIconLabel.setPixmap(icon_pixmap)
@@ -1812,7 +1827,27 @@ class UI(QMainWindow):
 
 if __name__ == "__main__":
     try:
+        # Set the Windows AppUserModelID before creating QApplication so the
+        # taskbar and Start Menu use the app's own icon rather than Python's.
+        if sys.platform == "win32":
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "ManaakiWhenua.RAPIIDlite.3"
+            )
+
         app = QApplication(sys.argv)
+
+        # Set the application icon early so the taskbar uses it from launch.
+        # This must be set on the QApplication object, not just the window.
+        if getattr(sys, 'frozen', False):
+            _app_dir = Path(sys.executable).parent
+        else:
+            _app_dir = Path(__file__).parent
+        _icon_path = _app_dir / "images" / "RAPIIDlite_icon.ico"
+        if not _icon_path.exists():
+            _icon_path = _app_dir / "images" / "RAPIIDlite_icon.png"
+        if _icon_path.exists():
+            app.setWindowIcon(QtGui.QIcon(str(_icon_path)))
 
         # Match the Tailwind font-sans stack used by the Chrysalis web app.
         # QFont resolves to the first family actually installed on the system:
