@@ -1,4 +1,4 @@
-# RAPIIDlite v3.1
+# RAPIIDlite v3.2
 
 **Transforming specimen labels to digital data**
 
@@ -36,7 +36,7 @@ If you want to modify the app, add features, or run it on macOS or Linux, follow
 
 ---
 
-## Project structure
+## Project structure for dev
 
 ```
 rapiid_lite/
