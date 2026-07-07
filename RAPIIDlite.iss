@@ -1,15 +1,15 @@
 [Setup]
 AppId={{8AAE16EC-C49C-439A-9B9C-1541DC8A1807}
 AppName=RAPIIDlite
-AppVersion=3.1
-AppVerName=RAPIIDlite 3.1
+AppVersion=3.2
+AppVerName=RAPIIDlite 3.2
 AppPublisher=Aaron Harmer
 AppPublisherURL=https://github.com/aharmer/RAPIIDlite
 DefaultDirName={autopf64}\RAPIIDlite
 DefaultGroupName=RAPIIDlite
 UninstallDisplayIcon={app}\rapiid_lite.exe
 OutputDir=dist
-OutputBaseFilename=RAPIIDlite-3.1-win64-setup
+OutputBaseFilename=RAPIIDlite-3.2-win64-setup
 SetupIconFile=images\RAPIIDlite_icon.ico
 Compression=lzma
 SolidCompression=yes
