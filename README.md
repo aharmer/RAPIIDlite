@@ -1,10 +1,16 @@
-# RAPIID v3.2
+# RAPIID v4.0
 
 **Transforming specimen labels to digital data**
 
 RAPIID is a desktop imaging application for natural history collection digitisation workflows. It captures high-quality images of specimen labels using one or more cameras, decodes DataMatrix barcodes from accession labels, and automatically records capture metadata to CSV and EXIF tags — with no manual data entry required.
 
 Developed at [Manaaki Whenua – Landcare Research](https://www.landcareresearch.co.nz/) as part of the [Chrysalis](https://chrysalis-ento.vercel.app/) digitisation platform.
+
+> **A note on the name**
+>
+> As of v4.0, RAPIID and RAPIIDlite are a single application, released simply as **RAPIID**. The two had converged to the point where the "lite" qualifier no longer described a real difference, so it has been retired.
+>
+> If you previously used RAPIIDlite, this is its direct continuation — v4.0 follows on from RAPIIDlite v3.2, and no functionality has been removed. This repository was formerly `aharmer/RAPIIDlite`; the old URL still redirects here.
 
 ---
 

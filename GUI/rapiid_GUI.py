@@ -316,7 +316,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "RAPIID v3.2"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "RAPIID v4.0"))
         self.headerTitleLabel.setText(_translate("MainWindow", "RAPIID"))
         self.headerSubtitleLabel.setText(_translate("MainWindow", "Transforming specimen labels to digital data"))
         self.barcode_webcam_label.setText(_translate("MainWindow", "Barcode camera"))

@@ -317,7 +317,7 @@ class ExifManager:
                     piexif.ImageIFD.DateTime: now.strftime("%Y:%m:%d %H:%M:%S").encode(),
                     piexif.ImageIFD.Make: b"RAPIID",
                     piexif.ImageIFD.Model: device_info.encode(),
-                    piexif.ImageIFD.Software: b"RAPIID v3.2",
+                    piexif.ImageIFD.Software: b"RAPIID v4.0",
                     piexif.ImageIFD.ImageDescription: f"Specimen: {taxon} - {accession} - LABEL".encode(),
                 },
                 "Exif": {
@@ -1832,7 +1832,7 @@ if __name__ == "__main__":
         if sys.platform == "win32":
             import ctypes
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                "ManaakiWhenua.RAPIID.3"
+                "ManaakiWhenua.RAPIID.4"
             )
 
         app = QApplication(sys.argv)

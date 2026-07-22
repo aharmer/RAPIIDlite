@@ -1,0 +1,49 @@
+# Changelog
+
+All notable changes to this project are documented here.
+
+## [4.0] — 2026-07-23
+
+Unified release. RAPIID and RAPIIDlite are now a single application under the
+name **RAPIID**.
+
+### Changed
+
+- **Renamed the application from RAPIIDlite to RAPIID.** The two applications
+  had merged into one, and the "lite" qualifier no longer described a real
+  distinction. This release is the direct continuation of RAPIIDlite v3.2 —
+  no functionality has been removed.
+- Renamed the repository from `aharmer/RAPIIDlite` to `aharmer/RAPIID`. The
+  previous URL redirects to the new one.
+- Renamed source files, GUI modules, icons, and the workflow document to drop
+  the `lite` qualifier (`rapiid_lite.py` → `rapiid.py`,
+  `rapiidlite_GUI.*` → `rapiid_GUI.*`, `RAPIIDlite_icon.*` → `RAPIID_icon.*`).
+- Updated the installer: application name, install directory, Start Menu and
+  desktop shortcuts, and output filename now use the RAPIID name. The Inno
+  Setup `AppId` is unchanged, so existing installations upgrade in place
+  rather than installing alongside the old version.
+- Updated the Windows AppUserModelID to `ManaakiWhenua.RAPIID.4`.
+- Images captured with this version are tagged `RAPIID` in their EXIF `Make`
+  and `Software` fields, and in the `capture_device` CSV column. Images
+  captured with earlier versions retain their original `RAPIIDlite` tags.
+- Replaced the `pyuic5.exe` launcher in the GUI rebuild helper with
+  `python -m PyQt5.uic.pyuic` and relative paths. The `.exe` launcher embeds
+  an absolute interpreter path at install time and breaks if the environment
+  is renamed.
+
+### Upgrading
+
+Existing installations upgrade in place. Desktop and Start Menu shortcuts are
+recreated under the new name; you may want to remove stale pinned taskbar
+shortcuts, which point at the old executable name.
+
+---
+
+## Earlier releases
+
+Versions 3.2 and earlier were published under the name **RAPIIDlite**. Their
+history is available from the git tags in this repository:
+
+- [3.2] — 2026-07-08
+- [3.1] — 2025-07-21
+- [3.0] — 2026-03-23
