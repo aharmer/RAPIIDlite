@@ -49,6 +49,9 @@ dependencies:
     - pytz==2022.1
     - pywin32-ctypes==0.2.0
     - pyyaml==6.0
+    # Do not upgrade past 2.14 - qt-material 2.14.2 dropped PyQt5 support.
+    # Newer versions silently fail to theme (no icons, no fonts) and emit
+    # "qt_material must be imported after PySide or PyQt!".
     - qt-material==2.12
     - setuptools==60.10.0
     - spinnaker_python-2.7.0.128-cp38-cp38-win_amd64.whl

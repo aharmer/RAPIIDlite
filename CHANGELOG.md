@@ -31,6 +31,14 @@ name **RAPIID**.
   an absolute interpreter path at install time and breaks if the environment
   is renamed.
 
+### Fixed
+
+- Documented the `qt-material` version ceiling in `environment.yml`. Release
+  2.14.2 dropped PyQt5 support, and newer versions fail silently: the material
+  theme's icons and fonts never load, and the app logs
+  "qt_material must be imported after PySide or PyQt!". The pin at 2.12 was
+  already correct; the constraint is now stated so it is not upgraded past it.
+
 ### Upgrading
 
 Existing installations upgrade in place. Desktop and Start Menu shortcuts are
