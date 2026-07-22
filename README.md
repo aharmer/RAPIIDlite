@@ -208,7 +208,7 @@ camera_settings:
 
 ## License
 
-Images captured with RAPIIDlite are tagged with a CC-BY 4.0 license. The application code itself is not yet under an open-source license — contact the development team for usage enquiries.
+Images captured with RAPIIDlite are tagged with a CC-BY 4.0 license. The application code itself is under a GPL-3.0 license.
 
 ---
 
