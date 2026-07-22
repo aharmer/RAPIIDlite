@@ -8,7 +8,7 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-from GUI.rapiidlite_GUI import Ui_MainWindow  # importing main window of the GUI
+from GUI.rapiid_GUI import Ui_MainWindow  # importing main window of the GUI
 import cv2
 import numpy as np
 import pylibdmtx.pylibdmtx as dmtx
@@ -315,9 +315,9 @@ class ExifManager:
                     piexif.ImageIFD.Copyright: f"CC-BY 4.0 {now.year} {rights}".encode(),
                     piexif.ImageIFD.Artist: creator.encode(),
                     piexif.ImageIFD.DateTime: now.strftime("%Y:%m:%d %H:%M:%S").encode(),
-                    piexif.ImageIFD.Make: b"RAPIIDlite",
+                    piexif.ImageIFD.Make: b"RAPIID",
                     piexif.ImageIFD.Model: device_info.encode(),
-                    piexif.ImageIFD.Software: b"RAPIIDlite v3.1",
+                    piexif.ImageIFD.Software: b"RAPIID v3.2",
                     piexif.ImageIFD.ImageDescription: f"Specimen: {taxon} - {accession} - LABEL".encode(),
                 },
                 "Exif": {
@@ -350,7 +350,7 @@ class ExifManager:
             'rights_owner': rights,
             'creator': creator,
             'date_captured': now.strftime("%Y-%m-%d %H:%M:%S"),
-            'capture_device': device_info or "RAPIIDlite",
+            'capture_device': device_info or "RAPIID",
             'caption': f"{accession} - Specimen label",
             'title': f"{taxon} - {accession} - Specimen label",
         }
@@ -832,8 +832,8 @@ class UI(QMainWindow):
             else:
                 app_dir = Path(__file__).parent
 
-            ico_path = app_dir / "images" / "RAPIIDlite_icon.ico"
-            png_path = app_dir / "images" / "RAPIIDlite_icon.png"
+            ico_path = app_dir / "images" / "RAPIID_icon.ico"
+            png_path = app_dir / "images" / "RAPIID_icon.png"
 
             # Window/taskbar icon — .ico preferred (Windows picks the right
             # frame size itself), .png fallback
@@ -1602,7 +1602,7 @@ class UI(QMainWindow):
     def show_popup(self):
         try:
             button = QMessageBox.question(
-                self, "RAPIID lite Dialog",
+                self, "RAPIID Dialog",
                 "A folder with this accession number already exists!\n"
                 "Do you want to overwrite the existing file/s?"
             )
@@ -1843,9 +1843,9 @@ if __name__ == "__main__":
             _app_dir = Path(sys.executable).parent
         else:
             _app_dir = Path(__file__).parent
-        _icon_path = _app_dir / "images" / "RAPIIDlite_icon.ico"
+        _icon_path = _app_dir / "images" / "RAPIID_icon.ico"
         if not _icon_path.exists():
-            _icon_path = _app_dir / "images" / "RAPIIDlite_icon.png"
+            _icon_path = _app_dir / "images" / "RAPIID_icon.png"
         if _icon_path.exists():
             app.setWindowIcon(QtGui.QIcon(str(_icon_path)))
 

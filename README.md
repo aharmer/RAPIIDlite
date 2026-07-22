@@ -1,8 +1,8 @@
-# RAPIIDlite v3.2
+# RAPIID v3.2
 
 **Transforming specimen labels to digital data**
 
-RAPIIDlite is a desktop imaging application for natural history collection digitisation workflows. It captures high-quality images of specimen labels using one or more cameras, decodes DataMatrix barcodes from accession labels, and automatically records capture metadata to CSV and EXIF tags — with no manual data entry required.
+RAPIID is a desktop imaging application for natural history collection digitisation workflows. It captures high-quality images of specimen labels using one or more cameras, decodes DataMatrix barcodes from accession labels, and automatically records capture metadata to CSV and EXIF tags — with no manual data entry required.
 
 Developed at [Manaaki Whenua – Landcare Research](https://www.landcareresearch.co.nz/) as part of the [Chrysalis](https://chrysalis-ento.vercel.app/) digitisation platform.
 
@@ -39,14 +39,14 @@ If you want to modify the app, add features, or run it on macOS or Linux, follow
 ## Project structure for dev
 
 ```
-rapiid_lite/
-├── rapiid_lite.py              # Main application
+rapiid/
+├── rapiid.py                   # Main application
 ├── GUI/
-│   └── rapiidlite_GUI.py       # Auto-generated PyQt5 UI class (from .ui file)
+│   └── rapiid_GUI.py           # Auto-generated PyQt5 UI class (from .ui file)
 ├── GUI/
-│   └── rapiidlite_GUI.ui       # Qt Designer UI definition
+│   └── rapiid_GUI.ui           # Qt Designer UI definition
 ├── images/
-│   └── RAPIIDlite_icon.png     # Application icon (512×512 PNG)
+│   └── RAPIID_icon.png         # Application icon (512×512 PNG)
 ├── scripts/
 │   └── ymlRW.py                # YAML config read/write helper (optional)
 └── README.md
@@ -104,7 +104,7 @@ pip install spinnaker_python-<version>-cp<pyver>-win_amd64.whl
 ## Running the application
 
 ```bash
-python rapiid_lite.py
+python rapiid.py
 ```
 
 The application window appears immediately. Camera discovery runs in the background — a progress dialog is shown while webcams and FLIR cameras are detected. Controls are enabled once discovery completes.
@@ -208,7 +208,7 @@ camera_settings:
 
 ## License
 
-Images captured with RAPIIDlite are tagged with a CC-BY 4.0 license. The application code itself is under a GPL-3.0 license.
+Images captured with RAPIID are tagged with a CC-BY 4.0 license. The application code itself is under a GPL-3.0 license.
 
 ---
 

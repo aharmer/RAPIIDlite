@@ -1,1 +1,1 @@
-pyuic5.exe -x "C:\\Users\\HarmerA\\Dropbox\\data\\RAPIIDlite\\GUI\rapiidlite_GUI.ui" -o "C:\\Users\\HarmerA\\Dropbox\\data\\RAPIIDlite\\GUI\rapiidlite_GUI.py"
+pyuic5.exe -x "C:\\Users\\HarmerA\\Dropbox\\data\\RAPIIDlite\\GUI\rapiid_GUI.ui" -o "C:\\Users\\HarmerA\\Dropbox\\data\\RAPIIDlite\\GUI\rapiid_GUI.py"

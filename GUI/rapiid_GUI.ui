@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>RAPIIDlite v3.1</string>
+   <string>RAPIID v3.2</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="styleSheet">
@@ -123,7 +123,7 @@
             <string notr="true">color: #111827; background: transparent;</string>
            </property>
            <property name="text">
-            <string>RAPIIDlite</string>
+            <string>RAPIID</string>
            </property>
           </widget>
          </item>

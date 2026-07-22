@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\\Users\\HarmerA\\Dropbox\\data\\RAPIIDlite\\GUI\rapiidlite_GUI.ui'
+# Form implementation generated from reading ui file 'C:\\Users\\HarmerA\\Dropbox\\data\\RAPIIDlite\\GUI\rapiid_GUI.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.7
 #
@@ -316,8 +316,8 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "RAPIIDlite v3.1"))
-        self.headerTitleLabel.setText(_translate("MainWindow", "RAPIIDlite"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "RAPIID v3.2"))
+        self.headerTitleLabel.setText(_translate("MainWindow", "RAPIID"))
         self.headerSubtitleLabel.setText(_translate("MainWindow", "Transforming specimen labels to digital data"))
         self.barcode_webcam_label.setText(_translate("MainWindow", "Barcode camera"))
         self.pushButton_barcode_webcam.setText(_translate("MainWindow", "Start live view"))
