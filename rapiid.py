@@ -1832,7 +1832,7 @@ if __name__ == "__main__":
         if sys.platform == "win32":
             import ctypes
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                "ManaakiWhenua.RAPIIDlite.3"
+                "ManaakiWhenua.RAPIID.3"
             )
 
         app = QApplication(sys.argv)

@@ -7,7 +7,7 @@ import sys
 import pylibdmtx
 from cx_Freeze import setup, Executable
 
-icon_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images', 'RAPIIDlite_icon.ico')
+icon_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images', 'RAPIID_icon.ico')
 
 includes = []
 
@@ -32,9 +32,9 @@ if sys.platform == "win32":
     base = "Win32GUI"
 
 setup(
-    name='RAPIIDlite',
+    name='RAPIID',
     version='3.2',
-    description='RAked Pinned Insect Imaging Device (Lite)',
+    description='RAked Pinned Insect Imaging Device',
     author='A.M.T. Harmer',
     author_email='harmera@landcareresearch.co.nz',
     options={
@@ -45,23 +45,23 @@ setup(
         },
         'bdist_msi': {
             'add_to_path': False,
-            'initial_target_dir': r'[ProgramFilesFolder]\RAPIIDlite',
-            'install_icon': 'images/RAPIIDlite_icon.ico',
+            'initial_target_dir': r'[ProgramFilesFolder]\RAPIID',
+            'install_icon': 'images/RAPIID_icon.ico',
         }
     },
     executables=[
         Executable(
-            'rapiid_lite.py',
+            'rapiid.py',
             base=base,
             icon=icon_file,
-            shortcut_name='RAPIIDlite',
+            shortcut_name='RAPIID',
             shortcut_dir='DesktopFolder'
         ),
         Executable(
-            'rapiid_lite.py',
+            'rapiid.py',
             base=base,
             icon=icon_file,
-            shortcut_name='RAPIIDlite',
+            shortcut_name='RAPIID',
             shortcut_dir='ProgramMenuFolder'
         ),
     ]
