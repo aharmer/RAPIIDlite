@@ -18,7 +18,7 @@ Developed at [Manaaki Whenua – Landcare Research](https://www.landcareresearch
 
 ### Option 1 — Windows installer (recommended for end users)
 
-The easiest way to get started is to download the pre-built Windows installer from the [GitHub releases page](../../releases/latest). Download the `.msi` file, run it, and follow the prompts — no Python or dependency installation is required.
+The easiest way to get started is to download the pre-built Windows installer from the [GitHub releases page](../../releases/latest). Download the `RAPIID-<version>-win64-setup.exe` file, run it, and follow the prompts — no Python or dependency installation is required.
 
 > **Note:** Windows may show a SmartScreen warning on first run because the installer is not yet code-signed. Click *More info* → *Run anyway* to proceed.
 
