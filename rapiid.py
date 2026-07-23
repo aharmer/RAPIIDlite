@@ -42,8 +42,9 @@ SPINNAKER_HINT = (
     "If you are using a FLIR camera, install the FLIR Spinnaker SDK — it "
     "provides the camera driver, which cannot be included in this installer. "
     "The SDK version does not need to match the app: RAPIID ships its own "
-    "Spinnaker runtime and only relies on the SDK for the driver. "
-    "Not required if you are only using webcams."
+    "Spinnaker runtime and only relies on the SDK for the driver. Install it "
+    "with the 'Application Development' profile — see the README for the full "
+    "list of installer options. Not required if you are only using webcams."
 )
 
 # FLIR camera imports

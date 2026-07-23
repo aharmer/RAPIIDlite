@@ -22,9 +22,7 @@ The easiest way to get started is to download the pre-built Windows installer fr
 
 > **Note:** Windows may show a SmartScreen warning on first run because the installer is not yet code-signed. Click *More info* → *Run anyway* to proceed.
 
-> **FLIR camera users — one extra step.** The installer bundles everything needed for **webcams**, but it cannot bundle the FLIR camera *driver*. If you will be using a FLIR camera, also install the [FLIR Spinnaker SDK](https://www.flir.com/products/spinnaker-sdk/) (a free Teledyne FLIR account is required to download it).
->
-> The SDK version does **not** need to match the app. RAPIID ships its own Spinnaker runtime (2.7.0.128) and uses it regardless of what the SDK installs — the SDK is needed only for the camera driver. Development and testing have been done against Spinnaker SDK **3.1.0.79**, so that version is a safe choice, but a current release should work equally well.
+> **FLIR camera users — one extra step.** The installer bundles everything needed for **webcams**, but it cannot bundle the FLIR camera *driver*. If you will be using a FLIR camera, you must also install the FLIR Spinnaker SDK — see [FLIR Spinnaker SDK](#flir-spinnaker-sdk) below for the download and the installer options to choose.
 >
 > Without it RAPIID installs and runs normally, but no FLIR camera will be detected. The app reports this in its log panel when it starts.
 >
@@ -107,7 +105,24 @@ pip install pylibdmtx
 
 ### FLIR Spinnaker SDK
 
-Download and install the Spinnaker SDK from [FLIR's website](https://www.flir.com/products/spinnaker-sdk/), then install the matching Python wheel:
+**Required only if you are using a FLIR camera.** If you are only using standard webcams, skip this section entirely.
+
+The Spinnaker SDK supplies the FLIR camera *driver*, which cannot be bundled into the RAPIID installer. Without it, RAPIID installs and runs normally but will not detect any FLIR camera — it reports this in its log panel at startup.
+
+Download the SDK from [Teledyne FLIR](https://www.flir.com/products/spinnaker-sdk/); a free account is required. On 64-bit Windows, choose the **x64** installer (`SpinnakerSDK_FULL_<version>_x64.exe`).
+
+Options to choose while installing:
+
+1. **Installation profile** — choose **Application Development**.
+2. **Visual Studio** — if you do not already have Visual Studio installed, accept the latest version offered by the installer, along with its recommended packages.
+3. **Camera interface** — tick **"I will use GigE cameras"** only if you actually have GigE cameras. The FLIR Blackfly S (BFS) used with RAPIID is **USB 3.0**, so this can be left unticked.
+4. **Evaluation programs** — optional. You can decline these.
+
+The SDK version does **not** need to match RAPIID. The app ships its own Spinnaker runtime (2.7.0.128) and uses it regardless of which SDK is installed — the SDK is needed only for the driver. Development and testing have been done against Spinnaker SDK **3.1.0.79**.
+
+> **Tip:** the SDK includes **SpinView**. If RAPIID cannot see your camera, open SpinView first — it uses the same driver but none of RAPIID's code. If SpinView cannot see the camera either, the problem is the driver, cable, port, or camera rather than RAPIID.
+
+**Developers only** — after installing the SDK, also install the matching Python wheel:
 
 ```bash
 pip install spinnaker_python-<version>-cp<pyver>-win_amd64.whl

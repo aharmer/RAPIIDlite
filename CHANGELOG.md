@@ -13,6 +13,11 @@ All notable changes to this project are documented here.
   match the app — RAPIID ships its own Spinnaker runtime (2.7.0.128) and needs
   the SDK only for the driver — and makes clear it is **not** needed for
   webcam-only use.
+- Step-by-step Spinnaker SDK installer instructions: which installer to
+  download (x64), the **Application Development** profile, the Visual Studio
+  prompt, when to tick "I will use GigE cameras" (not for the USB 3.0
+  Blackfly S), and that evaluation programs can be declined. Also notes that
+  SpinView can be used to test the camera independently of RAPIID.
 
 ### Fixed
 
