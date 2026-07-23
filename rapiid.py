@@ -39,9 +39,10 @@ except ImportError:
 # Shown in the log panel when no FLIR camera is found. Only relevant to FLIR
 # users, so it is worded as a conditional hint rather than an error.
 SPINNAKER_HINT = (
-    "If you are using a FLIR camera, install the FLIR Spinnaker SDK "
-    "(version 2.7.0.128, to match the bundled PySpin) — it provides the "
-    "camera driver, which cannot be included in this installer. "
+    "If you are using a FLIR camera, install the FLIR Spinnaker SDK — it "
+    "provides the camera driver, which cannot be included in this installer. "
+    "The SDK version does not need to match the app: RAPIID ships its own "
+    "Spinnaker runtime and only relies on the SDK for the driver. "
     "Not required if you are only using webcams."
 )
 

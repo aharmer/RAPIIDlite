@@ -9,9 +9,10 @@ All notable changes to this project are documented here.
 - Documented the FLIR Spinnaker SDK prerequisite in the **installer** section of
   the README. The SDK supplies the FLIR camera driver, which cannot be bundled
   into the installer, so a clean machine detects no FLIR camera even though the
-  app is otherwise working. The note states the required version (2.7.0.128, to
-  match the bundled PySpin) and makes clear it is **not** needed for webcam-only
-  use.
+  app is otherwise working. The note explains that the SDK version need not
+  match the app — RAPIID ships its own Spinnaker runtime (2.7.0.128) and needs
+  the SDK only for the driver — and makes clear it is **not** needed for
+  webcam-only use.
 
 ### Fixed
 
