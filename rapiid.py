@@ -36,6 +36,15 @@ except ImportError:
     print("Warning: PIL/piexif not available. EXIF embedding disabled.")
     EXIF_AVAILABLE = False
 
+# Shown in the log panel when no FLIR camera is found. Only relevant to FLIR
+# users, so it is worded as a conditional hint rather than an error.
+SPINNAKER_HINT = (
+    "If you are using a FLIR camera, install the FLIR Spinnaker SDK "
+    "(version 2.7.0.128, to match the bundled PySpin) — it provides the "
+    "camera driver, which cannot be included in this installer. "
+    "Not required if you are only using webcams."
+)
+
 # FLIR camera imports
 try:
     import PySpin
@@ -938,8 +947,12 @@ class UI(QMainWindow):
                 break
             webcams.append(f"Webcam {index}")
 
-        # Count FLIR cameras via Spinnaker (fast — no frame grab needed)
+        # Count FLIR cameras via Spinnaker (fast — no frame grab needed).
+        # Any failure reason is returned rather than printed: the installed app
+        # is built with base="Win32GUI" and has no console, so print() output is
+        # invisible to end users. The caller logs it to the in-app log panel.
         flir_count = 0
+        flir_error = None
         if FLIR_AVAILABLE:
             try:
                 system = PySpin.System.GetInstance()
@@ -948,9 +961,15 @@ class UI(QMainWindow):
                 cam_list.Clear()
                 system.ReleaseInstance()
             except Exception as e:
-                print(f"FLIR discovery error: {e}")
+                flir_error = str(e)
+        else:
+            flir_error = "PySpin library not available"
 
-        return {'webcams': webcams, 'flir_count': flir_count}
+        return {
+            'webcams': webcams,
+            'flir_count': flir_count,
+            'flir_error': flir_error,
+        }
 
     @QtCore.pyqtSlot(object)
     def _on_cameras_discovered(self, result):
@@ -973,13 +992,24 @@ class UI(QMainWindow):
         msg = "Found " + " and ".join(parts) + "." if parts else "No cameras detected."
         self.statusBar().showMessage(msg, 4000)
 
+        # Explain missing FLIR cameras in the log panel. The Spinnaker SDK
+        # supplies the FLIR camera driver, which cannot be bundled into the
+        # installer, so a clean machine detects no FLIR camera even though the
+        # app itself is working. Irrelevant to webcam-only users, so the hint
+        # says so explicitly rather than reading as an error.
+        if result.get('flir_error'):
+            self.log_info(f"FLIR camera detection failed: {result['flir_error']}")
+            self.log_info(SPINNAKER_HINT)
+        elif not self._flir_count:
+            self.log_info("No FLIR cameras detected. " + SPINNAKER_HINT)
+
     @QtCore.pyqtSlot(tuple)
     def _on_discovery_error(self, error_tuple):
         _, value, _ = error_tuple
-        print(f"Camera discovery error: {value}")
+        self.log_info(f"Camera discovery error: {value}")
         self._discovery_dlg.close()
         self._set_camera_controls_enabled(True)
-        self.statusBar().showMessage("Camera discovery failed — see console for details.", 5000)
+        self.statusBar().showMessage("Camera discovery failed — see the log for details.", 5000)
 
     # ── Slot management ────────────────────────────────────────────────────────
 

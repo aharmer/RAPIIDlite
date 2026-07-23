@@ -22,6 +22,12 @@ The easiest way to get started is to download the pre-built Windows installer fr
 
 > **Note:** Windows may show a SmartScreen warning on first run because the installer is not yet code-signed. Click *More info* → *Run anyway* to proceed.
 
+> **FLIR camera users — one extra step.** The installer bundles everything needed for **webcams**, but it cannot bundle the FLIR camera *driver*. If you will be using a FLIR camera, also install the [FLIR Spinnaker SDK](https://www.flir.com/products/spinnaker-sdk/), version **2.7.0.128** — the version must match the PySpin build shipped with the app.
+>
+> Without it RAPIID installs and runs normally, but no FLIR camera will be detected. The app reports this in its log panel when it starts.
+>
+> **Not required if you are only using standard webcams.**
+
 ### Option 2 — Run from source (recommended for developers)
 
 If you want to modify the app, add features, or run it on macOS or Linux, follow the instructions in the [Requirements](#requirements) and [Running the application](#running-the-application) sections below.

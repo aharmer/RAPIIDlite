@@ -4,7 +4,24 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Documented the FLIR Spinnaker SDK prerequisite in the **installer** section of
+  the README. The SDK supplies the FLIR camera driver, which cannot be bundled
+  into the installer, so a clean machine detects no FLIR camera even though the
+  app is otherwise working. The note states the required version (2.7.0.128, to
+  match the bundled PySpin) and makes clear it is **not** needed for webcam-only
+  use.
+
 ### Fixed
+
+- **FLIR detection failures were invisible.** Diagnostics were written with
+  `print()`, but the app is frozen with `base="Win32GUI"` and therefore has no
+  console, so end users saw cameras silently missing with no explanation. The
+  reason a FLIR camera was not found is now reported in the in-app log panel,
+  along with a note that the Spinnaker SDK is only required for FLIR cameras.
+  The camera-discovery error handler no longer refers users to a console that
+  does not exist.
 
 - **Frozen builds failed to start on machines without a conda install**, with
   "The code execution cannot proceed because zlib.dll was not found".
