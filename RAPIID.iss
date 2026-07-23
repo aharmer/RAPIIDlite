@@ -1,15 +1,15 @@
 [Setup]
 AppId={{8AAE16EC-C49C-439A-9B9C-1541DC8A1807}
 AppName=RAPIID
-AppVersion=4.0
-AppVerName=RAPIID 4.0
+AppVersion=4.0.1
+AppVerName=RAPIID 4.0.1
 AppPublisher=Aaron Harmer
 AppPublisherURL=https://github.com/aharmer/RAPIID
 DefaultDirName={autopf64}\RAPIID
 DefaultGroupName=RAPIID
 UninstallDisplayIcon={app}\rapiid.exe
 OutputDir=dist
-OutputBaseFilename=RAPIID-4.0-win64-setup
+OutputBaseFilename=RAPIID-4.0.1-win64-setup
 SetupIconFile=images\RAPIID_icon.ico
 Compression=lzma
 SolidCompression=yes

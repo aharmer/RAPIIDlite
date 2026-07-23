@@ -1,4 +1,4 @@
-# RAPIID v4.0
+# RAPIID v4.0.1
 
 **Transforming specimen labels to digital data**
 

@@ -51,7 +51,7 @@ if sys.platform == "win32":
 
 setup(
     name='RAPIID',
-    version='4.0',
+    version='4.0.1',
     description='RAked Pinned Insect Imaging Device',
     author='A.M.T. Harmer',
     author_email='harmera@landcareresearch.co.nz',

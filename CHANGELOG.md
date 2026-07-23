@@ -2,7 +2,10 @@
 
 All notable changes to this project are documented here.
 
-## [Unreleased]
+## [4.0.1] — 2026-07-23
+
+Patch release. Fixes a packaging fault that prevented v4.0 from starting on
+machines without a conda installation, and makes FLIR camera setup diagnosable.
 
 ### Added
 
