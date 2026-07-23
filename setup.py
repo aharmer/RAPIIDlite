@@ -21,8 +21,26 @@ dmtx_dlls = [
     if f.endswith('.dll')
 ]
 
+# In conda builds, python38.dll links against zlib.dll dynamically. cx_Freeze
+# places zlib.dll under lib/, where the Windows loader will not find it: it
+# searches the executable's own directory, not lib/. The app therefore starts
+# fine on a dev machine (conda is on PATH) but fails on a clean install with
+# "zlib.dll was not found". Ship it next to the executable instead.
+zlib_dll = next(
+    (p for p in (os.path.join(sys.prefix, 'zlib.dll'),
+                 os.path.join(sys.prefix, 'Library', 'bin', 'zlib.dll'))
+     if os.path.exists(p)),
+    None,
+)
+if zlib_dll is None:
+    raise SystemExit(
+        "zlib.dll not found in the active environment. The frozen app will not "
+        "start without it - check the environment before building."
+    )
+runtime_dlls = [(zlib_dll, 'zlib.dll')]
+
 # Include your files and folders
-includefiles = ['GUI/', 'images/', 'scripts/', 'config.yaml'] + dmtx_dlls
+includefiles = ['GUI/', 'images/', 'scripts/', 'config.yaml'] + dmtx_dlls + runtime_dlls
 
 # Exclude unnecessary packages
 excludes = ['cx_Freeze', 'setuptools', 'tkinter']

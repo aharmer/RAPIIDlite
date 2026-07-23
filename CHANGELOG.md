@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Fixed
+
+- **Frozen builds failed to start on machines without a conda install**, with
+  "The code execution cannot proceed because zlib.dll was not found".
+  `python38.dll` links against `zlib.dll` dynamically in conda builds, but
+  cx_Freeze placed `zlib.dll` under `lib/`, where the Windows loader does not
+  look — it searches the executable's own directory. Development machines
+  masked this because the conda environment is on `PATH`. `setup.py` now ships
+  `zlib.dll` alongside the executable, and fails the build early if it cannot
+  be located in the active environment.
+
 ## [4.0] — 2026-07-23
 
 Unified release. RAPIID and RAPIIDlite are now a single application under the
